@@ -185,11 +185,48 @@ extern "stdcall" fn queue_bot_classes(_addr: u32, r: &mut crate::hook::Regs) -> 
     0
 }
 
+/// The lobby's player list shows member slots with `isValid` (row list 0xe96ef0, row contents
+/// 0xe98510), which bots never have. Each `cmp byte [record+0x1ac],1` jumps to a stub that also
+/// accepts `isBot` (+0x1b1). Bots sit in the top slots, so their rows come after the players'
+/// and the cursor/gamer-card code (players only) still lines up.
+const LIST_CMPS: [(Exe, usize, [u8; 8]); 4] = [
+    (Exe::Dx11, 0x00E9_6EF6, [0x80, 0xBC, 0x2A, 0xAC, 0x01, 0x00, 0x00, 0x01]), // cmp byte [edx+ebp+0x1ac],1
+    (Exe::Dx11, 0x00E9_8523, [0x80, 0xBC, 0x11, 0xAC, 0x01, 0x00, 0x00, 0x01]), // cmp byte [ecx+edx+0x1ac],1
+    (Exe::Dx9, 0x00E8_6E26, [0x80, 0xBC, 0x2A, 0xAC, 0x01, 0x00, 0x00, 0x01]),
+    (Exe::Dx9, 0x00E8_8453, [0x80, 0xBC, 0x11, 0xAC, 0x01, 0x00, 0x00, 0x01]),
+];
+
+/// Stub code at `at` for `cmp` at `addr`: the cmp, `je` past an isBot cmp, then back to addr+8.
+fn or_bot_stub(addr: u32, cmp: [u8; 8], at: u32) -> Vec<u8> {
+    let mut bot = cmp;
+    bot[3] = 0xB1; // disp32 0x1ac (isValid) -> 0x1b1 (isBot)
+    let mut c = [&cmp[..], &[0x74, 8], &bot[..], &[0xE9]].concat();
+    c.extend((addr + 8).wrapping_sub(at + c.len() as u32 + 4).to_le_bytes());
+    c
+}
+
+unsafe fn or_bot(addr: usize, cmp: [u8; 8]) {
+    use windows_sys::Win32::System::Memory::{VirtualAlloc, MEM_COMMIT, MEM_RESERVE, PAGE_EXECUTE_READWRITE};
+    let mut now = [0u8; 8];
+    let mem = VirtualAlloc(std::ptr::null(), 32, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE) as *mut u8;
+    if !read_mem(addr, &mut now) || now != cmp || mem.is_null() {
+        crate::log!("bots: lobby list {addr:#x}: bytes differ, not patched");
+        return;
+    }
+    let code = or_bot_stub(addr as u32, cmp, mem as u32);
+    std::ptr::copy_nonoverlapping(code.as_ptr(), mem, code.len());
+    let mut jmp = [0x90u8; 8];
+    jmp[0] = 0xE9;
+    jmp[1..5].copy_from_slice(&(mem as u32).wrapping_sub(addr as u32 + 5).to_le_bytes());
+    write_mem(addr, &jmp);
+}
+
 /// Called once at startup.
 pub fn install() {
     let Some(exe) = *EXE else { return };
     if enabled() {
         SLOT_CLASSES.iter().filter(|p| p.exe == exe).for_each(|p| drop(crate::patch::apply(p)));
+        LIST_CMPS.iter().filter(|c| c.0 == exe).for_each(|c| unsafe { or_bot(c.1, c.2) });
         // 5 bytes: mov eax,[esp+4]; push esi. Pops 0x10 bytes of arguments.
         unsafe { crate::hook::install(add_archive(exe), 5, 0x10, queue_bot_classes) };
         crate::botmaps::prepare();
@@ -212,7 +249,7 @@ fn hotkey() -> Option<bool> {
 /// Shows the count in the window title (the lobby has no place for it).
 fn show_count(n: usize) {
     use windows_sys::Win32::UI::WindowsAndMessaging::{GetForegroundWindow, SetWindowTextW};
-    let title: Vec<u16> = format!("Lost Planet 2 - bots: {n} (F7 add, F8 remove) ").encode_utf16().collect();
+    let title: Vec<u16> = format!("Lost Planet 2 - bots: {n} (F7 add, F8 remove)\0").encode_utf16().collect();
     unsafe { SetWindowTextW(GetForegroundWindow(), title.as_ptr()) };
 }
 
@@ -287,6 +324,16 @@ mod tests {
         let (t, r) = (template(11), bot_record(11));
         assert_eq!((r[0], r[0x3C], r[0x46]), (15, 15, 34), "slot 15, botTableNo of bot 11 (uHm6A)");
         assert!((0..RECORD).filter(|&o| o != 0 && o != 0x3C).all(|o| r[o] == t[o]));
+    }
+
+    #[test]
+    fn or_bot_stub_checks_both_flags_and_returns() {
+        let c = or_bot_stub(0x1000, LIST_CMPS[0].2, 0x5000);
+        assert_eq!(&c[..8], &LIST_CMPS[0].2);
+        assert_eq!((c[8], c[9]), (0x74, 8), "je over the isBot cmp");
+        assert_eq!(c[13], 0xB1, "second cmp reads isBot");
+        let back = (0x5000 + c.len() as u32).wrapping_add(u32::from_le_bytes(c[c.len() - 4..].try_into().unwrap()));
+        assert_eq!(back, 0x1008);
     }
 
     #[test]

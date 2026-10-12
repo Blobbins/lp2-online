@@ -52,11 +52,12 @@ still needs confirming in playtests; start from the values in the dump.
 ends on time or score only, never for lack of players.
 
 **Bots (`[bots] count = 0..11`).** In a Player Match lobby you host, **F7 adds a bot and F8 removes
-one** (the window title shows the count; `count` is where it starts). Free lobby slots fill with the game's own Training
+one** (the lobby lists the bots and its help line shows the keys; `count` is where it starts). Free lobby slots fill with the game's own Training
 ("AI Enemy Battle") bots. They need the map's AI navigation, which only maps with a Training
 version have, so bots move on four online maps (Cube and three others); elsewhere they stand
 still. On first start the DLL copies that data into `nativePC\arcXmlTmpPC\aArea_ONLINE_{12,10,01,09}.arc`,
-keeping each original as `.arc.orig` (rename them back to undo). Everyone in the lobby should use
+keeping each original as `.arc.orig` (rename them back to undo); the lobby help line is
+added to `nativePCrcLp2Xml\ID_FCORE_*_PC.arc` the same way. Everyone in the lobby should use
 the same `lp2mods.ini` tuning. Joining players pick up the host's bot count automatically (their
 `lp2mods.ini` needs a `[bots]` section). Up to 11 bots.
 

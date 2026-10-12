@@ -84,6 +84,56 @@ fn prepare_one(dir: &Path, online: &str, training: &str) -> Result<bool, String>
     Ok(true)
 }
 
+/// Message tables (`message\msgPC\Msg*`, "MES\0"): entries are a u32 length, the UTF-8 text and a NUL.
+const MES: u32 = 0x3FDA_9B90;
+const WAITING: &str = "Waiting for other players to join...";
+const WAITING_HINT: &str = "Waiting for other players to join...      Host: F7 add bot, F8 remove bot";
+
+fn mes_entry(text: &str) -> Vec<u8> {
+    let mut e = (text.len() as u32).to_le_bytes().to_vec();
+    e.extend(text.as_bytes());
+    e.push(0);
+    e
+}
+
+/// `table` with its one entry `from` replaced by `to`.
+pub fn replace_message(table: &[u8], from: &str, to: &str) -> Option<Vec<u8>> {
+    let (old, new) = (mes_entry(from), mes_entry(to));
+    let at = table.windows(old.len()).position(|w| w == old)?;
+    table[at + 1..].windows(old.len()).all(|w| w != old).then(|| [&table[..at], &new[..], &table[at + old.len()..]].concat())
+}
+
+/// Puts the bot hotkeys into the lobby's "Waiting for other players" line (every language's
+/// `ID_FCORE_*_PC.arc` that has it, once, keeping `.arc.orig`).
+fn prepare_lobby_text() {
+    let dir = crate::exe_dir().join(r"nativePC\arcLp2Xml");
+    let Ok(files) = std::fs::read_dir(&dir) else { return };
+    for f in files.flatten().map(|f| f.path()) {
+        let name = f.file_name().unwrap_or_default().to_string_lossy().to_string();
+        let orig = f.with_extension("arc.orig");
+        if !(name.starts_with("ID_FCORE_") && name.ends_with("_PC.arc")) || orig.exists() {
+            continue;
+        }
+        let run = || -> Result<bool, String> {
+            let mut entries = lp2_arc::read(&std::fs::read(&f).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
+            let Some(e) = entries.iter_mut().find(|e| e.type_hash == MES && e.name.eq_ignore_ascii_case(r"message\msgPC\MsgOnline")) else {
+                return Ok(false);
+            };
+            let Some(data) = replace_message(&e.data, WAITING, WAITING_HINT) else { return Ok(false) };
+            e.data = data;
+            let packed = lp2_arc::write(&entries).map_err(|e| e.to_string())?;
+            std::fs::copy(&f, &orig).map_err(|e| e.to_string())?;
+            std::fs::write(&f, packed).map_err(|e| e.to_string())?;
+            Ok(true)
+        };
+        match run() {
+            Ok(true) => log!("bots: lobby hint added to {name}"),
+            Ok(false) => {}
+            Err(e) => log!("bots: {name}: {e}"),
+        }
+    }
+}
+
 /// Gives the four versus maps that have Training versions their AI data (once).
 pub fn prepare() {
     let dir = crate::exe_dir().join(r"nativePC\arcXmlTmpPC");
@@ -94,6 +144,7 @@ pub fn prepare() {
             Err(e) => log!("bots: aArea_ONLINE_{online}: {e}"),
         }
     }
+    prepare_lobby_text();
 }
 
 #[cfg(test)]
@@ -128,6 +179,14 @@ mod tests {
         d.extend((body.len() as u32 + 4).to_le_bytes());
         d.extend(body);
         d
+    }
+
+    #[test]
+    fn message_replaced_once() {
+        let table = [&b"MES\0"[..], &mes_entry("a"), &mes_entry(WAITING), &mes_entry("b")].concat();
+        let out = replace_message(&table, WAITING, WAITING_HINT).unwrap();
+        assert_eq!(out, [&b"MES\0"[..], &mes_entry("a"), &mes_entry(WAITING_HINT), &mes_entry("b")].concat());
+        assert!(replace_message(&[&table[..], &mes_entry(WAITING)].concat(), WAITING, "x").is_none(), "ambiguous");
     }
 
     #[test]

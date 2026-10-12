@@ -106,7 +106,7 @@ heads 0x50710, bodies 0x50730, legs 0x50750, backpacks 0x50770 (32 bytes each), 
 | Weapon slot variants (what Customization → Weapons offers; "Weapons %" is out of these 60) | 0x5088c | 5 gun-slot bytes × 7 variants, then 5 grenade-slot bytes × 5 variants, bit n = variant n, bit 0 = default | 60 | DX11 0x7de8f0 / 0x7de920, Weapons tab handler 0xeee250 (uIdCustomize state 4) |
 | Abilities | 0x501fc | 42 bits | 42 | achievement check DX11 0x7f5750 |
 
-Part table id 0xAABBCCDD maps to `nativePCrcXmlTmpPC\CustomParts\<hd|bd|bk|lg><set><item>[<variant>].arc`
+Part table id 0xAABBCCDD maps to `nativePC\arcXmlTmpPC\CustomParts\<hd|bd|bk|lg><set><item>[<variant>].arc`
 with set = 0x20 + DD (0x0f stays 0f), item = BB, variant = CC.
 
 ## Match flow (versus, DX11 addresses)
@@ -130,7 +130,7 @@ to aError. All of these were found with `[trace]` hooks (`crates/xlive/src/hook.
 
 ## Versus bots (DX11 addresses)
 
-Training -> AI Enemy Battle is offline versus with bots; online needed four things it lacks
+Training -> AI Enemy Battle is offline versus with bots; online needed five things it lacks
 (`crates/xlive/src/bots.rs`, `botmaps.rs`, `[bots] count = N`):
 
 1. **Member records.** Bots are sNetRuleMediator member records with `isBot` (+0x69), `isGameMember`,
@@ -156,6 +156,12 @@ Training -> AI Enemy Battle is offline versus with bots; online needed four thin
      crashes on it. The table is patched so slots 5..15 give uHm60..6A, and bots take the top slots.
    - Bots in slots 1..n take the member index the session hands the first joiner, who then never
      shows up in the host's lobby; hence the top slots.
+
+5. **Lobby.** The lobby's player list (row list 0xe96ef0, row contents 0xe98510) shows member slots
+   with `isValid`; both checks are detoured to accept `isBot` too, which also brings the bots' 3D
+   models. The "Players N/16" header (0xe94870) still counts players only. The "Waiting for other
+   players to join..." line is a `message\msgPC\MsgOnline` entry (MES table in `ID_FCORE_*_PC.arc`:
+   u32 length, UTF-8 text, NUL) and gets the F7/F8 hint.
 
 Archive type hashes are `~crc32(class name) & 0x7fffffff`. Found with `[trace]` hooks and `[watch]`
 hardware watchpoints (`crates/xlive/src/watch.rs`; an empty `[watch]` only installs the handler, for
