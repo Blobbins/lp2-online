@@ -85,6 +85,13 @@ pub fn ip_str(raw: u32) -> Ipv4Addr {
     Ipv4Addr::from(raw.to_ne_bytes())
 }
 
+/// Uses the fastest listed server, if one is online now.
+pub fn find_master() {
+    if let Some(m) = home_master() {
+        NET.set_master(m);
+    }
+}
+
 /// The listed server that answers fastest (no ini `master`): where we publish lobbies we host.
 fn home_master() -> Option<SocketAddr> {
     let found = crate::session::directory_masters();

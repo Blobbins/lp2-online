@@ -222,10 +222,16 @@ pub extern "system" fn DllMain(_module: HANDLE, reason: u32, _reserved: *mut std
 pub fn start_heartbeat() {
     static STARTED: std::sync::Once = std::sync::Once::new();
     STARTED.call_once(|| {
-        std::thread::spawn(|| loop {
-            net::NET.hello();
-            session::refresh();
-            std::thread::sleep(std::time::Duration::from_secs(5));
+        std::thread::spawn(|| {
+            for tick in 0u64.. {
+                // No server was online at startup: look again every minute.
+                if tick % 12 == 11 && CONFIG.master.is_none() && net::NET.master().is_none() {
+                    net::find_master();
+                }
+                net::NET.hello();
+                session::refresh();
+                std::thread::sleep(std::time::Duration::from_secs(5));
+            }
         });
     });
 }
