@@ -51,8 +51,8 @@ still needs confirming in playtests; start from the values in the dump.
 **Solo start (`[startup] solo_start = true`).** The host can start a Player Match alone, and a match
 ends on time or score only, never for lack of players.
 
-**Bots (`[bots] count = 0..11`).** In a Player Match lobby you host, **F7 adds a bot and F8 removes
-one** (the lobby lists the bots and its help line shows the keys; `count` is where it starts). Free lobby slots fill with the game's own Training
+**Bots (`[bots]`).** A Player Match lobby you host starts with just you; **F7 adds a bot and F8
+removes one**, up to 11 (the lobby lists the bots and its help line shows the keys). Free lobby slots fill with the game's own Training
 ("AI Enemy Battle") bots. They need the map's AI navigation, which only maps with a Training
 version have, so bots move on four online maps (Cube and three others); elsewhere they stand
 still. On first start the DLL copies that data into `nativePC\arcXmlTmpPC\aArea_ONLINE_{12,10,01,09}.arc`,

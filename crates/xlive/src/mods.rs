@@ -80,6 +80,7 @@ pub fn parse_ini(text: &str) -> BTreeMap<String, Vec<(String, String)>> {
     for line in text.lines().map(|l| l.split(['#', ';']).next().unwrap_or("").trim()) {
         if let Some(s) = line.strip_prefix('[').and_then(|s| s.strip_suffix(']')) {
             section = s.trim().to_ascii_lowercase();
+            out.entry(section.clone()).or_default(); // a section can matter with no keys (`[bots]`)
         } else if let Some((k, v)) = line.split_once('=') {
             out.entry(section.clone()).or_default().push((k.trim().to_string(), v.trim().to_string()));
         }
@@ -203,6 +204,17 @@ mod tests {
         assert_eq!(o, vec![("A".into(), 1.5f32.to_le_bytes()), ("B".into(), 7i32.to_le_bytes())]);
         let o: Vec<(String, Vec<u8>)> = o.into_iter().map(|(k, v)| (k, v.to_vec())).collect();
         assert_ne!(fnv64(&o), fnv64(&o[..1]));
+    }
+
+    #[test]
+    fn keyless_section_is_kept() {
+        let ini = parse_ini("[bots]
+# comment only
+[startup]
+x = 1
+");
+        assert_eq!(ini["bots"], vec![]);
+        assert!(!ini.contains_key("watch"));
     }
 
     #[test]

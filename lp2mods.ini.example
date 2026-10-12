@@ -25,8 +25,7 @@ weapons = true
 abilities = true
 
 [bots]
-# AI bots in Player Match lobbies (0-11). In a lobby you host, F7 adds one and F8 removes one;
-# players who join use your count. Keep this section to see bots in others' lobbies. Bots move only on
-# Cube and the 3 other maps that have Training versions (the DLL adds their AI data once,
-# keeping the originals in nativePC/arcXmlTmpPC as aArea_ONLINE_*.arc.orig).
-count = 3
+# AI bots in Player Match lobbies (up to 11). A lobby you host starts with none: F7 adds one,
+# F8 removes one. Players who join see your bots. Remove this section to turn bots off.
+# Bots move only on Cube and the 3 other maps that have Training versions (the DLL adds their
+# AI data once, keeping the originals in nativePC/arcXmlTmpPC as aArea_ONLINE_*.arc.orig).

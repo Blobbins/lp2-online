@@ -2,11 +2,11 @@
 //! sNetRuleMediator with bot records (`isBot`, a `botTableNo` naming the bot's look and AI, its name
 //! and custom parts) and the match spawns an AI-driven character for every such slot.
 //!
-//! `[bots] count = N` in lp2mods.ini (the section turns bots on; N is the starting count): in an
-//! online lobby, the top N member slots (16-N..16) get those records (`data/bot_records.bin`, copied
-//! from an AI Enemy Battle). Top slots because the session hands joining players the lowest free
-//! member index. In a lobby they host, F7 adds a bot and F8 removes one (shown in the window
-//! title); the count is published with the session and joining players follow it.
+//! A `[bots]` section in lp2mods.ini turns bots on. A hosted lobby starts with none; F7 adds one and
+//! F8 removes one (shown in the window title). With N bots, the top N member slots (16-N..16) get
+//! those records (`data/bot_records.bin`, copied from an AI Enemy Battle); top slots because the
+//! session hands joining players the lowest free member index. The count is published with the
+//! session and joining players follow it.
 //!
 //! A bot's class comes from its slot (0x7e3320: slot s -> uHm5f+s), and only uHm60..6A have a
 //! network puppet, so `SLOT_CLASSES` makes slots 5..15 uHm60..6A instead: bot k (Training's bot k,
@@ -29,7 +29,6 @@
 use crate::mods::{read_mem, write_mem, Exe, EXE, MODS};
 use crate::patch::Patch;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::LazyLock;
 
 const RECORD: usize = 0x7C;
 const RECORDS: usize = 0x148;
@@ -67,14 +66,16 @@ fn enabled() -> bool {
     MODS.ini.contains_key("bots")
 }
 
-/// The bot count in play: lp2mods.ini's at start, then the hotkeys' or the joined host's.
-static COUNT: LazyLock<AtomicUsize> = LazyLock::new(|| {
-    let ini = MODS.ini.get("bots").and_then(|s| s.iter().find(|(k, _)| k == "count")).and_then(|(_, v)| v.parse().ok());
-    AtomicUsize::new(ini.unwrap_or(0).min(MAX))
-});
+/// The bot count in play: set by the hotkeys while hosting, or the joined host's.
+static COUNT: AtomicUsize = AtomicUsize::new(0);
 
 pub fn count() -> usize {
     COUNT.load(Ordering::Relaxed)
+}
+
+/// A new hosted lobby starts with no bots.
+pub fn reset() {
+    COUNT.store(0, Ordering::Relaxed);
 }
 
 /// In a joined lobby: use the host's count (from its published session).

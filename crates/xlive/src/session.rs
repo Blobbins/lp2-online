@@ -147,6 +147,7 @@ pub fn create(h: usize, flags: u32, max_public: u32, max_private: u32, info: &mu
         key[..8].copy_from_slice(&random_u64().to_le_bytes());
         key[8..].copy_from_slice(&random_u64().to_le_bytes());
         *info = XSessionInfo { id, host: NET.xnaddr(), key };
+        crate::bots::reset();
     }
     log!("XSessionCreate flags {flags:#x} slots {max_public}+{max_private} id {:016x}", u64::from_le_bytes(info.id));
     if let Some(found) = SEEN.lock().unwrap().get(&u64::from_le_bytes(info.id)).filter(|_| flags & XSESSION_CREATE_HOST == 0) {
