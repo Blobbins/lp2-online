@@ -1,0 +1,8 @@
+[package]
+name = "lp2-master"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+lp2-proto = { path = "../proto" }
+serde_json.workspace = true

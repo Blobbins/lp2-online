@@ -1,0 +1,17 @@
+# Copy next to LP2DX9.exe / LP2DX11.exe as lp2net.ini
+
+# Your gamertag (up to 15 ASCII characters).
+name = Player
+
+# The lp2-master server everyone in your group uses: host or host:port (default port 27900).
+master = 127.0.0.1
+
+# true only if other players can reach this PC on `port` (UDP forwarded, or no NAT).
+# Leave false and your traffic goes through the master's relay instead.
+direct = false
+
+# Local UDP port for game traffic. 0 = any free port. Set a fixed one when direct = true.
+port = 0
+
+# Writes lp2net.log next to the game. Attach it to bug reports.
+log = true

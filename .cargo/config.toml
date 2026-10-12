@@ -1,0 +1,4 @@
+[alias]
+# Lost Planet 2 is a 32-bit game, so its xlive.dll must be 32-bit too.
+dll = "build -p lp2-xlive --release --target i686-pc-windows-msvc"
+master = "run -p lp2-master --release --"
