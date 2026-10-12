@@ -57,7 +57,7 @@ one** (the lobby lists the bots and its help line shows the keys; `count` is whe
 version have, so bots move on four online maps (Cube and three others); elsewhere they stand
 still. On first start the DLL copies that data into `nativePC\arcXmlTmpPC\aArea_ONLINE_{12,10,01,09}.arc`,
 keeping each original as `.arc.orig` (rename them back to undo); the lobby help line is
-added to `nativePCrcLp2Xml\ID_FCORE_*_PC.arc` the same way. Everyone in the lobby should use
+added to `nativePC\arcLp2Xml\ID_FCORE_*_PC.arc` the same way. Everyone in the lobby should use
 the same `lp2mods.ini` tuning. Joining players pick up the host's bot count automatically (their
 `lp2mods.ini` needs a `[bots]` section). Up to 11 bots.
 
