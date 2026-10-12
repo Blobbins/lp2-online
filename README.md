@@ -91,10 +91,15 @@ Open port 27900 for **both TCP and UDP**. Relayed traffic uses the server's band
 
 ## Install on each player's PC
 
-1. In the game folder, rename the existing `xlive.dll` to `xlive.dll.bak` (that's the offline
+You need your own copy of Lost Planet 2 (PC). Nothing from the game is included here.
+
+1. Download the zip from [Releases](../../releases) (or build it, below).
+2. In the game folder, rename the existing `xlive.dll` to `xlive.dll.bak` (that's the offline
    dummy; putting it back undoes everything).
-2. Copy the built `xlive.dll` into the game folder.
-3. Copy `lp2net.ini.example` there as `lp2net.ini`; set `name` and `master`.
+3. Copy `xlive.dll` into the game folder.
+4. Copy `lp2net.ini.example` there as `lp2net.ini`; set `name` and `master` (the IP of whoever in
+   your group runs `lp2-master`).
+5. Optional: copy `lp2mods.ini.example` there as `lp2mods.ini` for unlocks, solo start and bots.
 
 Saves: profile data is kept in the game folder's `ProflieSetting\title_specific{1,2,3}.bin` in
 the same format the dummy used (the typo is the dummy's), so switching DLLs back and forth is safe.

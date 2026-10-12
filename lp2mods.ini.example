@@ -1,0 +1,31 @@
+# Copy next to LP2DX9.exe / LP2DX11.exe as lp2mods.ini. Everyone in a lobby should use the same file.
+
+[startup]
+# Go straight from boot to the title screen (no Capcom/NVIDIA logos).
+skip_logos = true
+# Skip "Press Start": go from boot straight into the game's menus.
+skip_title = true
+# Allow a second copy of the game (it joins as "<name> 2"), e.g. to fill a lobby.
+multi_instance = false
+# Let the lobby host start a versus match alone (normally needs 2+ players, 3+ in team modes).
+solo_start = true
+
+[tuning]
+
+[rules]
+
+[unlocks]
+# Own every customization part (heads, bodies, legs, backpacks) without the campaign/slot machine.
+parts = true
+# Own every Nom de Guerre (title).
+titles = true
+# Own every weapon and grenade (120, incl. the 17 special weapons).
+weapons = true
+# Own every ability (42).
+abilities = true
+
+[bots]
+# Fill free slots of a lobby you host with this many AI bots (0-15). Bots can move only on
+# Cube and the 3 other maps that have Training versions (the DLL adds their AI data once,
+# keeping the originals in nativePC/arcXmlTmpPC as aArea_ONLINE_*.arc.orig).
+count = 3
