@@ -56,7 +56,7 @@ ends on time or score only, never for lack of players.
 version have, so bots move on four online maps (Cube and three others); elsewhere they stand
 still. On first start the DLL copies that data into `nativePC\arcXmlTmpPC\aArea_ONLINE_{12,10,01,09}.arc`,
 keeping each original as `.arc.orig` (rename them back to undo). Everyone in the lobby should use
-the same `lp2mods.ini`.
+the same `lp2mods.ini`. Bots exist on the host only: players who join don't see them yet.
 
 `[startup] skip_logos` / `skip_title` skip the boot screens.
 
@@ -123,8 +123,9 @@ the same format the dummy used (the typo is the dummy's), so switching DLLs back
 
 Experimental. Tested on LP2 PC v1.0.0.129, DX11 (DX9 shares the code but is less tested):
 hosting, searching, a 2-player match (two game instances on one PC), solo matches and bot
-matches all work. **Not yet tested: a match between two PCs over the internet**, and whether
-joining players see the host's bots. Read `lp2net.log` when something fails.
+matches all work, including a match with all traffic forced through the relay. LP2 uses UDP only,
+so the relay carries everything. **Not yet tested: a match between two PCs over the internet.**
+Joining players don't see the host's bots. Read `lp2net.log` when something fails.
 
 Known gaps (each is a `shortcut:` comment in the code):
 
