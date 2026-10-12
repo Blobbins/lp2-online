@@ -20,7 +20,8 @@ Runs on Cloudflare's free plan.
    npx wrangler deploy
    ```
 
-3. It prints the address, like `https://lp2-directory.<your-name>.workers.dev`. Put it in
+3. It prints the address, like `https://lp2-directory.<your-name>.workers.dev` (the public one
+   is `https://lp2-directory.lp2rewrite.workers.dev`). For your own, put it in
    `DIRECTORY_URL` (`crates/proto/src/lib.rs`) and rebuild, or set `directory =` in `lp2net.ini`
    and pass `--directory` to `lp2-master`.
 

@@ -135,8 +135,8 @@ mod tests {
 }
 
 /// Where `lp2-master` servers list themselves and games find them (`directory/` in the repo).
-/// shortcut: placeholder until the Worker is deployed; `directory =` in lp2net.ini overrides it.
-pub const DIRECTORY_URL: &str = "https://lp2-directory.REPLACE-ME.workers.dev";
+/// `directory =` in lp2net.ini and `--directory` override it.
+pub const DIRECTORY_URL: &str = "https://lp2-directory.lp2rewrite.workers.dev";
 
 /// A server in the directory: `addr` is the public `ip:port` it announced from.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
