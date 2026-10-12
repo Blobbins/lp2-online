@@ -71,7 +71,8 @@ pub struct Net {
     pub inst: u32,
     pub local: SocketAddrV4,
     pub public: Mutex<Option<SocketAddrV4>>,
-    master: Option<SocketAddr>,
+    /// The master in use: lp2net.ini's, or one from the directory (switched to the joined lobby's).
+    master: Mutex<Option<SocketAddr>>,
     /// instance -> real endpoint (direct, or the master when relayed).
     peers: Mutex<HashMap<u32, SocketAddr>>,
     pub vs: Mutex<VState>,
@@ -82,6 +83,24 @@ pub static NET: LazyLock<Net> = LazyLock::new(Net::start);
 
 pub fn ip_str(raw: u32) -> Ipv4Addr {
     Ipv4Addr::from(raw.to_ne_bytes())
+}
+
+/// The listed server that answers fastest (no ini `master`): where we publish lobbies we host.
+fn home_master() -> Option<SocketAddr> {
+    let found = crate::session::directory_masters();
+    let (tx, rx) = std::sync::mpsc::channel();
+    for m in found {
+        let tx = tx.clone();
+        std::thread::spawn(move || {
+            if std::net::TcpStream::connect_timeout(&m, Duration::from_secs(2)).is_ok() {
+                let _ = tx.send(m);
+            }
+        });
+    }
+    drop(tx);
+    let best = rx.recv_timeout(Duration::from_secs(3)).ok();
+    log!("master: {}", best.map_or("no server online in the directory".into(), |m| format!("{m} (fastest listed server)")));
+    best
 }
 
 fn local_ip(toward: Option<SocketAddr>) -> Ipv4Addr {
@@ -113,14 +132,14 @@ impl Net {
             inst: u32::from_ne_bytes([10, r[0], r[1], r[2].max(1)]),
             local,
             public: Mutex::new(None),
-            master: cfg.master,
+            master: Mutex::new(cfg.master.or_else(home_master)),
             peers: Mutex::default(),
             vs: Mutex::default(),
             cv: Condvar::new(),
         };
         net.first_hello();
         log!("net up: instance {} local {} public {:?} master {:?} direct {}",
-            ip_str(net.inst), net.local, *net.public.lock().unwrap(), net.master, cfg.direct);
+            ip_str(net.inst), net.local, *net.public.lock().unwrap(), net.master(), cfg.direct);
         if cfg.relay {
             log!("relay = true: every peer goes through the master");
         }
@@ -132,7 +151,7 @@ impl Net {
 
     /// Learn our public endpoint before the game asks for its XNADDR.
     fn first_hello(&self) {
-        let Some(master) = self.master else { return };
+        let Some(master) = self.master() else { return };
         let _ = self.sock.set_read_timeout(Some(Duration::from_millis(700)));
         let mut buf = [0u8; 64];
         for _ in 0..3 {
@@ -149,8 +168,23 @@ impl Net {
         }
     }
 
+    pub fn master(&self) -> Option<SocketAddr> {
+        *self.master.lock().unwrap()
+    }
+
+    /// Moves to another master (the server listing a lobby we join): register there so its relay
+    /// knows us. Routes learned through the old master's relay are dropped.
+    pub fn set_master(&self, m: SocketAddr) {
+        let old = self.master.lock().unwrap().replace(m);
+        if old != Some(m) {
+            log!("master: switching to {m}");
+            self.peers.lock().unwrap().retain(|_, a| Some(*a) != old);
+            (0..3).for_each(|_| self.hello());
+        }
+    }
+
     pub fn hello(&self) {
-        if let Some(m) = self.master {
+        if let Some(m) = self.master() {
             let mut p = MAGIC.to_vec();
             p.push(PKT_HELLO);
             p.extend_from_slice(&self.inst.to_le_bytes());
@@ -180,7 +214,7 @@ impl Net {
     }
 
     fn on_packet(&self, p: &[u8], from: SocketAddr) {
-        if Some(from) == self.master && self.on_hello_ack(p) {
+        if Some(from) == self.master() && self.on_hello_ack(p) {
             return;
         }
         let Some((src, dst, src_port, dst_port, payload)) = parse_data(p) else { return };
@@ -190,7 +224,7 @@ impl Net {
         {
             // Learn the return path; never replace a direct route with the relay.
             let mut peers = self.peers.lock().unwrap();
-            if Some(from) != self.master || !peers.contains_key(&src) {
+            if Some(from) != self.master() || !peers.contains_key(&src) {
                 peers.insert(src, from);
             }
         }
@@ -326,7 +360,7 @@ impl Net {
         } else {
             None
         };
-        Some((inst, direct.or(self.master)))
+        Some((inst, direct.or(self.master())))
     }
 
     /// XNetXnAddrToInAddr: registers the route and returns the fake address.
@@ -343,7 +377,7 @@ impl Net {
     /// Real IP for a fake address, for the game's TCP sockets (which need a direct path).
     pub fn real_ip(&self, inst: u32) -> Option<Ipv4Addr> {
         match self.peers.lock().unwrap().get(&inst)? {
-            SocketAddr::V4(a) if Some(SocketAddr::V4(*a)) != self.master => Some(*a.ip()),
+            SocketAddr::V4(a) if Some(SocketAddr::V4(*a)) != self.master() => Some(*a.ip()),
             _ => None,
         }
     }

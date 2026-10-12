@@ -7,7 +7,7 @@ use crate::{log, random_u64, CONFIG, ERROR_INSUFFICIENT_BUFFER, ERROR_SUCCESS};
 use lp2_proto::*;
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Read, Write};
-use std::net::TcpStream;
+use std::net::{SocketAddr, TcpStream};
 use std::sync::{LazyLock, Mutex};
 use std::time::Duration;
 
@@ -60,7 +60,8 @@ pub static SESSIONS: LazyLock<Mutex<HashMap<usize, Local>>> = LazyLock::new(Mute
 /// Data the host set with XNetQosListen, by session id.
 static QOS_LISTEN: LazyLock<Mutex<HashMap<u64, Vec<u8>>>> = LazyLock::new(Mutex::default);
 /// Sessions seen in searches, for later QoS lookups.
-static SEEN: LazyLock<Mutex<HashMap<u64, Session>>> = LazyLock::new(Mutex::default);
+/// Sessions seen in searches (with the master listing them), for QoS lookups and joining.
+static SEEN: LazyLock<Mutex<HashMap<u64, (Session, SocketAddr)>>> = LazyLock::new(Mutex::default);
 /// XNQOS blocks handed to the game, freed by XNetQosRelease.
 static QOS_BLOCKS: LazyLock<Mutex<HashMap<usize, Vec<u64>>>> = LazyLock::new(Mutex::default);
 
@@ -69,7 +70,25 @@ fn bytes_of<T: Copy>(v: &T) -> &[u8] {
 }
 
 pub fn master_request(req: &Request) -> Option<Response> {
-    let master = CONFIG.master?;
+    master_request_to(NET.master()?, req)
+}
+
+/// The masters to search: lp2net.ini's `master`, or every server in the directory.
+pub fn directory_masters() -> Vec<SocketAddr> {
+    match lp2_proto::directory::servers(&CONFIG.directory) {
+        Ok(list) => list.iter().filter_map(|e| e.addr.parse().ok()).collect(),
+        Err(e) => {
+            log!("server directory {}: {e}", CONFIG.directory);
+            vec![]
+        }
+    }
+}
+
+fn search_masters() -> Vec<SocketAddr> {
+    CONFIG.master.map_or_else(directory_masters, |m| vec![m])
+}
+
+fn master_request_to(master: SocketAddr, req: &Request) -> Option<Response> {
     let run = || -> std::io::Result<Response> {
         let s = TcpStream::connect_timeout(&master, Duration::from_secs(3))?;
         s.set_read_timeout(Some(Duration::from_secs(3)))?;
@@ -150,7 +169,9 @@ pub fn create(h: usize, flags: u32, max_public: u32, max_private: u32, info: &mu
         crate::bots::reset();
     }
     log!("XSessionCreate flags {flags:#x} slots {max_public}+{max_private} id {:016x}", u64::from_le_bytes(info.id));
-    if let Some(found) = SEEN.lock().unwrap().get(&u64::from_le_bytes(info.id)).filter(|_| flags & XSESSION_CREATE_HOST == 0) {
+    let joined = SEEN.lock().unwrap().get(&u64::from_le_bytes(info.id)).filter(|_| flags & XSESSION_CREATE_HOST == 0).cloned();
+    if let Some((found, master)) = joined {
+        NET.set_master(master); // its relay must know us before the game contacts the host
         crate::bots::follow(found.bots);
     }
     let l = Local { flags, info: *info, max_public, max_private, members: vec![] };
@@ -209,24 +230,39 @@ pub fn set_qos_listen(id: u64, data: Option<Vec<u8>>) {
 
 // ---- search ----
 
-/// Sessions from the master (or one by id), excluding ones we host.
+/// Sessions on every master (or one by id), excluding ones we host.
 pub fn search(id: Option<u64>, max: usize) -> Vec<Session> {
     let req = id.map_or(Request::List, |id| Request::Get { id });
-    let Some(Response::Sessions { sessions }) = master_request(&req) else { return vec![] };
+    let masters = search_masters();
+    // All masters at once: one slow server shouldn't hold up the list.
+    let replies: Vec<(SocketAddr, Vec<Session>)> = std::thread::scope(|sc| {
+        let jobs: Vec<_> = masters
+            .iter()
+            .map(|&m| {
+                let req = &req;
+                sc.spawn(move || match master_request_to(m, req) {
+                    Some(Response::Sessions { sessions }) => (m, sessions),
+                    _ => (m, vec![]),
+                })
+            })
+            .collect();
+        jobs.into_iter().filter_map(|j| j.join().ok()).collect()
+    });
     let mine = SESSIONS.lock().unwrap().values().map(Local::id).collect::<Vec<_>>();
     // shortcut: no matchmaking-query filtering (game mode, map); every open lobby is returned.
-    let found: Vec<Session> = sessions
+    let found: Vec<(Session, SocketAddr)> = replies
         .into_iter()
+        .flat_map(|(m, list)| list.into_iter().map(move |s| (s, m)))
         // Different tuning would desync a peer-to-peer match.
-        .filter(|s| s.validate().is_ok() && !mine.contains(&s.id) && s.mods == crate::mods::MODS.hash)
+        .filter(|(s, _)| s.validate().is_ok() && !mine.contains(&s.id) && s.mods == crate::mods::MODS.hash)
         .take(max)
         .collect();
     let mut seen = SEEN.lock().unwrap();
-    for s in &found {
-        seen.insert(s.id, s.clone());
+    for (s, m) in &found {
+        seen.insert(s.id, (s.clone(), *m));
     }
-    log!("session search: {} result(s)", found.len());
-    found
+    log!("session search: {} result(s) on {} server(s)", found.len(), masters.len());
+    found.into_iter().map(|(s, _)| s).collect()
 }
 
 fn search_results(out: &mut Out, sessions: &[Session]) {
@@ -280,7 +316,7 @@ fn qos_data(id: u64) -> Option<Vec<u8>> {
     if let Some(d) = QOS_LISTEN.lock().unwrap().get(&id) {
         return Some(d.clone());
     }
-    if let Some(s) = SEEN.lock().unwrap().get(&id) {
+    if let Some((s, _)) = SEEN.lock().unwrap().get(&id) {
         return Some(s.qos.clone());
     }
     search(Some(id), 1).pop().map(|s| s.qos)

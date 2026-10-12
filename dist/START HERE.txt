@@ -1,0 +1,17 @@
+LP2 Online - play Lost Planet 2 (PC) online again
+You need your own copy of the game (any version 1.0.0.129: Steam, retail or other).
+
+PLAY
+1. Double-click install.bat. It finds your Lost Planet 2 folder (or asks you to pick it) and
+   asks for your player name.
+2. Start the game: Online > Player Match. Quick Match / Custom Match lists every lobby on every
+   LP2 Online server; Create Match hosts your own (F7 adds a bot, F8 removes one).
+
+HOST A SERVER (optional, helps everyone)
+Servers list lobbies and relay traffic for players behind routers. To run one:
+1. Forward port 27900 (TCP and UDP) on your router to this PC.
+2. Double-click host-server.bat, type a name, allow it through Windows Firewall.
+It appears in everyone's search within a minute. If the port isn't reachable, the window says so.
+
+UNDO
+Double-click uninstall.bat: the game goes back to exactly how it was.

@@ -10,6 +10,8 @@ anyone can run.
 | `crates/xlive` | Drop-in 32-bit `xlive.dll`. Exports the exact 117 ordinals LP2 imports. Signs you in, gives the game working XNet sockets and session search. |
 | `crates/master` | `lp2-master`, the server. Lists hosted lobbies (TCP) and relays game packets for players behind NAT (UDP), both on one port. It stores nothing on disk and runs no game logic: the hosting player's game runs the match. |
 | `crates/proto` | Wire format both of them share. |
+| `directory` | The server directory: a Cloudflare Worker where servers list themselves and games find them. |
+| `dist` | Installer, uninstaller, `host-server.bat` and the release packaging script. |
 | `crates/arc` | `lp2-arc`: read, write, extract, repack and search the game's `.arc` archives. |
 | `research/` | Reverse-engineering tools and tables: classes, tuning globals, and the multiplayer systems map (`research/SYSTEMS.md`). |
 
@@ -84,28 +86,34 @@ cargo build -p lp2-master --release
 Output: `target/i686-pc-windows-msvc/release/xlive.dll` and `target/release/lp2-master(.exe)`.
 The master is plain Rust std, so it also builds on Linux for a VPS.
 
-## Run a server
+## Play
 
-```bash
-lp2-master 27900
-```
+You need your own copy of Lost Planet 2 (PC, v1.0.0.129: Steam, retail or other). Nothing from
+the game is included here.
 
-Open port 27900 for **both TCP and UDP**. Relayed traffic uses the server's bandwidth.
+1. Download the zip from [Releases](../../releases) and unzip it anywhere (the game folder is easiest).
+2. Double-click `install.bat`. It finds the game (next to it, in a Steam library, or asks you to
+   pick the folder), backs up the old `xlive.dll` and asks for your player name.
+3. In the game: Online > Player Match. The search lists every lobby on every LP2 Online server.
 
-## Install on each player's PC
+`uninstall.bat` puts the game back exactly as it was. Saves: profile data is kept in the game
+folder's `ProflieSetting	itle_specific{1,2,3}.bin` in the same format the original dummy DLL
+used (the typo is the dummy's), so switching back and forth is safe.
 
-You need your own copy of Lost Planet 2 (PC). Nothing from the game is included here.
+## Host a server
 
-1. Download the zip from [Releases](../../releases) (or build it, below).
-2. In the game folder, rename the existing `xlive.dll` to `xlive.dll.bak` (that's the offline
-   dummy; putting it back undoes everything).
-3. Copy `xlive.dll` into the game folder.
-4. Copy `lp2net.ini.example` there as `lp2net.ini`; set `name` and `master` (the IP of whoever in
-   your group runs `lp2-master`).
-5. Optional: copy `lp2mods.ini.example` there as `lp2mods.ini` for unlocks, solo start and bots.
+A server (`lp2-master`) lists lobbies and relays game traffic for players behind routers; the
+hosting player's game still runs each match. Anyone can run one:
 
-Saves: profile data is kept in the game folder's `ProflieSetting\title_specific{1,2,3}.bin` in
-the same format the dummy used (the typo is the dummy's), so switching DLLs back and forth is safe.
+1. Forward port 27900 (**TCP and UDP**) on your router to the PC.
+2. Run `host-server.bat` (or `lp2-master 27900 --name "My server"` on Windows or Linux).
+
+Every minute it announces itself to the server directory, which first checks that the port answers
+from the internet; then it's in everyone's search. `--private` keeps it out of the directory (for a
+group that sets `master = host:port` in `lp2net.ini`). Relayed traffic uses the server's bandwidth.
+
+**The directory** (`directory/`) is a small Cloudflare Worker that only keeps the list of servers
+online (in memory, nothing stored). See `directory/README.md` to deploy your own.
 
 ## How it works
 

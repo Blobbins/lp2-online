@@ -1,7 +1,10 @@
 //! Lost Planet 2 master server: a session browser (TCP) and packet relay (UDP) on one port.
 //! It is not a game server: the hosting player's game runs the match. Nothing is written to disk.
 //!
-//! Usage: `lp2-master [port]` (default 27900). Open that port for both TCP and UDP.
+//! Usage: `lp2-master [port] [--name NAME] [--private] [--directory URL]` (default port 27900).
+//! Forward that port (TCP and UDP) to this PC. Unless `--private`, the server lists itself in the
+//! public directory every minute, so every player's game finds it; the directory first checks that
+//! the port answers from the internet.
 
 use lp2_proto::*;
 use std::collections::HashMap;
@@ -142,15 +145,42 @@ fn serve_tcp(stream: TcpStream, state: &Mutex<State>) -> std::io::Result<()> {
     (&stream).write_all(&out)
 }
 
+const USAGE: &str = "usage: lp2-master [port] [--name NAME] [--private] [--directory URL]";
+
+/// Keeps this server in the directory; says once why it isn't listed (usually the port forward).
+fn announce_loop(url: String, port: u16, name: String) {
+    let mut last = None;
+    loop {
+        let now = directory::announce(&url, port, &name);
+        if last.as_ref() != Some(&now) {
+            match &now {
+                Ok(_) => println!("listed in the server directory as \"{name}\""),
+                Err(e) => eprintln!("not listed in the server directory: {e}"),
+            }
+        }
+        last = Some(now);
+        thread::sleep(Duration::from_secs(60));
+    }
+}
+
 fn main() -> std::io::Result<()> {
-    let port: u16 = match std::env::args().nth(1) {
-        Some(a) => a.parse().expect("usage: lp2-master [port]"),
-        None => DEFAULT_MASTER_PORT,
-    };
+    let (mut port, mut name, mut url, mut private) = (DEFAULT_MASTER_PORT, String::from("LP2 server"), DIRECTORY_URL.to_string(), false);
+    let mut args = std::env::args().skip(1);
+    while let Some(a) = args.next() {
+        match a.as_str() {
+            "--name" => name = args.next().expect(USAGE),
+            "--directory" => url = args.next().expect(USAGE),
+            "--private" => private = true,
+            p => port = p.parse().expect(USAGE),
+        }
+    }
     let state = Arc::new(Mutex::new(State::default()));
     let udp = UdpSocket::bind(("0.0.0.0", port))?;
     let tcp = TcpListener::bind(("0.0.0.0", port))?;
     println!("lp2-master listening on TCP+UDP port {port}");
+    if !private {
+        thread::spawn(move || announce_loop(url, port, name));
+    }
 
     let s = state.clone();
     thread::spawn(move || udp_loop(udp, s));

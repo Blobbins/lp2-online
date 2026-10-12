@@ -1,13 +1,14 @@
-# Copy next to LP2DX9.exe / LP2DX11.exe as lp2net.ini
+# Copy next to LP2DX9.exe / LP2DX11.exe as lp2net.ini (install.bat does this for you).
 
-# Your gamertag (up to 15 ASCII characters).
+# Your player name (up to 15 ASCII characters).
 name = Player
 
-# The lp2-master server everyone in your group uses: host or host:port (default port 27900).
-master = 127.0.0.1
+# Leave `master` out: your game finds every LP2 Online server through the public directory.
+# Set it to use only one server, e.g. a private one for your group: host or host:port (default 27900).
+# master = 192.0.2.10
 
 # true only if other players can reach this PC on `port` (UDP forwarded, or no NAT).
-# Leave false and your traffic goes through the master's relay instead.
+# Leave false and your traffic goes through the server's relay instead.
 direct = false
 
 # Local UDP port for game traffic. 0 = any free port. Set a fixed one when direct = true.
@@ -16,6 +17,5 @@ port = 0
 # Writes lp2net.log next to the game. Attach it to bug reports.
 log = true
 
-# Debug: send all game traffic through the master's relay, even to players on this PC or LAN
-# (to test the path internet players without port forwarding use).
+# Debug: send all game traffic through the server's relay, even to players on this PC or LAN.
 relay = false

@@ -2,3 +2,5 @@ target/
 graphify-out/
 __pycache__/
 *.log
+.wrangler/
+node_modules/

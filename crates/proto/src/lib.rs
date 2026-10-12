@@ -133,3 +133,46 @@ mod tests {
         assert!(Session::default().validate().is_err());
     }
 }
+
+/// Where `lp2-master` servers list themselves and games find them (`directory/` in the repo).
+/// shortcut: placeholder until the Worker is deployed; `directory =` in lp2net.ini overrides it.
+pub const DIRECTORY_URL: &str = "https://lp2-directory.REPLACE-ME.workers.dev";
+
+/// A server in the directory: `addr` is the public `ip:port` it announced from.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct ServerEntry {
+    pub addr: String,
+    #[serde(default)]
+    pub name: String,
+}
+
+/// HTTPS client for the directory (IPv4 only: servers are listed by the IPv4 they announce from).
+pub mod directory {
+    use super::ServerEntry;
+    use std::net::{SocketAddr, ToSocketAddrs};
+    use std::time::Duration;
+
+    fn agent() -> ureq::Agent {
+        ureq::AgentBuilder::new()
+            .timeout(Duration::from_secs(8))
+            .resolver(|host: &str| -> std::io::Result<Vec<SocketAddr>> { Ok(host.to_socket_addrs()?.filter(SocketAddr::is_ipv4).collect()) })
+            .build()
+    }
+
+    /// Lists this server; `Err` carries the directory's reason (e.g. the port is not forwarded).
+    pub fn announce(url: &str, port: u16, name: &str) -> Result<String, String> {
+        let body = serde_json::json!({ "port": port, "name": name }).to_string();
+        match agent().post(&format!("{url}/announce")).set("Content-Type", "application/json").send_string(&body) {
+            Ok(r) => Ok(r.into_string().unwrap_or_default()),
+            Err(ureq::Error::Status(code, r)) => Err(format!("{code}: {}", r.into_string().unwrap_or_default())),
+            Err(e) => Err(e.to_string()),
+        }
+    }
+
+    /// The servers online now (empty if the directory can't be reached).
+    pub fn servers(url: &str) -> Result<Vec<ServerEntry>, String> {
+        let r = agent().get(&format!("{url}/servers")).call().map_err(|e| e.to_string())?;
+        let text = r.into_string().map_err(|e| e.to_string())?;
+        serde_json::from_str(&text).map_err(|e| e.to_string())
+    }
+}
