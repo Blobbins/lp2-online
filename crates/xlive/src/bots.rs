@@ -92,7 +92,7 @@ extern "stdcall" fn queue_bot_classes(_addr: u32, r: &mut crate::hook::Regs) -> 
     static NAMES: std::sync::LazyLock<Vec<std::ffi::CString>> = std::sync::LazyLock::new(|| {
         (0..15).map(|i| std::ffi::CString::new(format!(r"arcLp2Xml\autoArc\uHm{:02x}", 0x60 + i)).unwrap()).collect()
     });
-    for name in &NAMES[..count()] {
+    for name in &NAMES[15 - count()..] { // the classes of the top slots, where on_frame puts bots
         unsafe { add(r.ecx, r.stack(1), name.as_ptr() as *const u8, 0, 2) };
     }
     crate::log!("bots: queued {} bot classes with {}", count(), String::from_utf8_lossy(path));
@@ -134,7 +134,9 @@ pub fn on_frame() {
         return;
     }
     let mut placed = vec![];
-    for i in 1..=n {
+    // From the top down: the session hands joining players the lowest free member index.
+    // shortcut: players + bots > 16 collide on a slot, cap bots by joiners if that matters.
+    for i in 16 - n..16 {
         let want = template(i);
         if rec(i)[IS_VALID] == 0 && rec(i) != want && write_mem(rule + RECORDS + i * RECORD, &want) {
             placed.push(i);

@@ -15,3 +15,7 @@ port = 0
 
 # Writes lp2net.log next to the game. Attach it to bug reports.
 log = true
+
+# Debug: send all game traffic through the master's relay, even to players on this PC or LAN
+# (to test the path internet players without port forwarding use).
+relay = false

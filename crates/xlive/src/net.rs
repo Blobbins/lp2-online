@@ -121,6 +121,9 @@ impl Net {
         net.first_hello();
         log!("net up: instance {} local {} public {:?} master {:?} direct {}",
             ip_str(net.inst), net.local, *net.public.lock().unwrap(), net.master, cfg.direct);
+        if cfg.relay {
+            log!("relay = true: every peer goes through the master");
+        }
         // These block on NET until start() returns.
         std::thread::spawn(|| NET.recv_loop());
         crate::start_heartbeat();
@@ -313,7 +316,9 @@ impl Net {
         }
         let inst = u32::from_le_bytes(a.online[..4].try_into().unwrap());
         let my_public = self.public.lock().unwrap().map(|p| p.ip().octets());
-        let direct = if Some(a.ina_online) == my_public {
+        let direct = if CONFIG.relay {
+            None
+        } else if Some(a.ina_online) == my_public {
             // Same public IP: same LAN, use the private address.
             Some(SocketAddr::from((a.ina, u16::from_le_bytes([a.online[8], a.online[9]]))))
         } else if a.online[10] == 1 {

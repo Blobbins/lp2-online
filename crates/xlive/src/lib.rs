@@ -42,11 +42,13 @@ pub struct Config {
     pub direct: bool,
     pub port: u16,
     pub log: bool,
+    /// Debug: send everything through the master's relay, even to peers on this PC or LAN.
+    pub relay: bool,
 }
 
 impl Config {
     pub fn parse(text: &str) -> Config {
-        let mut c = Config { name: "Player".into(), master: None, direct: false, port: 0, log: true };
+        let mut c = Config { name: "Player".into(), master: None, direct: false, port: 0, log: true, relay: false };
         for line in text.lines() {
             let line = line.split(['#', ';']).next().unwrap_or("");
             let Some((k, v)) = line.split_once('=') else { continue };
@@ -58,6 +60,7 @@ impl Config {
                 "direct" => c.direct = v.eq_ignore_ascii_case("true") || v == "1",
                 "port" => c.port = v.parse().unwrap_or(0),
                 "log" => c.log = v.eq_ignore_ascii_case("true") || v == "1",
+                "relay" => c.relay = v.eq_ignore_ascii_case("true") || v == "1",
                 _ => {}
             }
         }
