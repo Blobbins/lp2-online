@@ -130,7 +130,7 @@ to aError. All of these were found with `[trace]` hooks (`crates/xlive/src/hook.
 
 ## Versus bots (DX11 addresses)
 
-Training -> AI Enemy Battle is offline versus with bots; online needed three things it lacks
+Training -> AI Enemy Battle is offline versus with bots; online needed four things it lacks
 (`crates/xlive/src/bots.rs`, `botmaps.rs`, `[bots] count = N`):
 
 1. **Member records.** Bots are sNetRuleMediator member records with `isBot` (+0x69), `isGameMember`,
@@ -146,8 +146,20 @@ Training -> AI Enemy Battle is offline versus with bots; online needed three thi
    Without them the AI runs but never moves or finds targets. Pairs: ONLINE_12 (Cube) <- 26,
    ONLINE_10 <- 31, ONLINE_01 <- 41, ONLINE_09 <- 46 (36 is Cube's second layout).
 
+4. **Other players.** The host never sends bot records, but it does send each bot's state like a
+   player's (about one player's worth of traffic per bot). So every PC writes the same records
+   (same `count`), and on a PC that doesn't host them the think chooser 0x8daef0 gives a bot slot a
+   network puppet (category 0x1d, `cThinkNetPuppetHM<class>`) that follows the host's bot. `isBot`
+   keeps the lobby start and in-match "everyone loaded" checks from waiting for them. Two traps:
+   - A bot's class is its slot (0x7e3320: slot s -> uHm5f+s, jump table 0x7e3380), and puppets exist
+     only for uHm60..6A; a missing puppet leaves the slot's think null and the slot update 0x8fed70
+     crashes on it. The table is patched so slots 5..15 give uHm60..6A, and bots take the top slots.
+   - Bots in slots 1..n take the member index the session hands the first joiner, who then never
+     shows up in the host's lobby; hence the top slots.
+
 Archive type hashes are `~crc32(class name) & 0x7fffffff`. Found with `[trace]` hooks and `[watch]`
-hardware watchpoints (`crates/xlive/src/watch.rs`).
+hardware watchpoints (`crates/xlive/src/watch.rs`; an empty `[watch]` only installs the handler, for
+debug registers set by an outside script).
 
 ## Next RE steps
 

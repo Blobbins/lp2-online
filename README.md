@@ -51,12 +51,12 @@ still needs confirming in playtests; start from the values in the dump.
 **Solo start (`[startup] solo_start = true`).** The host can start a Player Match alone, and a match
 ends on time or score only, never for lack of players.
 
-**Bots (`[bots] count = 1..15`).** The host's free lobby slots fill with the game's own Training
+**Bots (`[bots] count = 1..11`).** The host's free lobby slots fill with the game's own Training
 ("AI Enemy Battle") bots. They need the map's AI navigation, which only maps with a Training
 version have, so bots move on four online maps (Cube and three others); elsewhere they stand
 still. On first start the DLL copies that data into `nativePC\arcXmlTmpPC\aArea_ONLINE_{12,10,01,09}.arc`,
 keeping each original as `.arc.orig` (rename them back to undo). Everyone in the lobby should use
-the same `lp2mods.ini`. Bots exist on the host only: players who join don't see them yet.
+the same `lp2mods.ini` (joining players see the host's bots only with the same `count`). Up to 11 bots.
 
 `[startup] skip_logos` / `skip_title` skip the boot screens.
 
@@ -124,8 +124,7 @@ the same format the dummy used (the typo is the dummy's), so switching DLLs back
 Experimental. Tested on LP2 PC v1.0.0.129, DX11 (DX9 shares the code but is less tested):
 hosting, searching, a 2-player match (two game instances on one PC), solo matches and bot
 matches all work, including a match with all traffic forced through the relay. LP2 uses UDP only,
-so the relay carries everything. **Not yet tested: a match between two PCs over the internet.**
-Joining players don't see the host's bots. Read `lp2net.log` when something fails.
+so the relay carries everything. **Not yet tested: a match between two PCs over the internet.** Read `lp2net.log` when something fails.
 
 Known gaps (each is a `shortcut:` comment in the code):
 

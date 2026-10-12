@@ -7,6 +7,7 @@
 //! esi = 4,8,10,a0       ; when it runs, watch esi+these (hex, 4-byte aligned, up to 4)
 //! ```
 //! Every write to a watched dword is logged with the address of the instruction after it.
+//! An empty `[watch]` only installs the handler, for debug registers set from outside.
 
 use crate::hook::Regs;
 use crate::log;
@@ -33,8 +34,13 @@ unsafe extern "system" fn on_exception(info: *mut EXCEPTION_POINTERS) -> i32 {
     for i in 0..4 {
         if (*ctx).Dr6 & (1 << i) != 0 && HITS.fetch_add(1, Ordering::Relaxed) < 300 {
             let addr = WATCHED[i].load(Ordering::Relaxed);
-            let value = std::ptr::read_volatile(addr as *const u32);
-            log!("watch {addr:#x} = {value:#x} written before eip {:#x}", (*rec).ExceptionAddress as usize);
+            let eip = (*rec).ExceptionAddress as usize;
+            if addr == 0 {
+                // Armed from outside the process (a debugger or script set DRn itself).
+                log!("watch DR{i} written before eip {eip:#x}");
+            } else {
+                log!("watch {addr:#x} = {:#x} written before eip {eip:#x}", std::ptr::read_volatile(addr as *const u32));
+            }
         }
     }
     (*ctx).Dr6 = 0;
@@ -99,14 +105,13 @@ extern "stdcall" fn on_hit(_addr: u32, r: &mut Regs) -> u32 {
 /// Installs the `[watch]` hook from lp2mods.ini, if any.
 pub fn apply() {
     let Some(s) = MODS.ini.get("watch") else { return };
+    // The handler alone lets an outside tool arm DR0-3 (`[watch]` with no `at`).
+    unsafe { AddVectoredExceptionHandler(1, Some(on_exception)) };
     let get = |k: &str| s.iter().find(|(key, _)| key == k).map(|(_, v)| v.as_str());
     let (Some(at), Some(esi)) = (get("at"), get("esi")) else { return };
     let Some((addr, len)) = at.split_once(':') else { return };
     let (Ok(addr), Ok(len)) = (u32::from_str_radix(addr.trim_start_matches("0x"), 16), len.parse::<usize>()) else { return };
     let offsets = esi.split(',').filter_map(|o| u32::from_str_radix(o.trim(), 16).ok()).take(4).collect();
     OFFSETS.set(offsets).ok();
-    unsafe {
-        AddVectoredExceptionHandler(1, Some(on_exception));
-        crate::hook::install(addr, len, 0, on_hit);
-    }
+    unsafe { crate::hook::install(addr, len, 0, on_hit) };
 }
