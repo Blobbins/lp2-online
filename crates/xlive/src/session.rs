@@ -51,6 +51,7 @@ impl Local {
             properties,
             qos: QOS_LISTEN.lock().unwrap().get(&self.id()).cloned().unwrap_or_default(),
             mods: crate::mods::MODS.hash,
+            bots: crate::bots::count() as u8,
         }
     }
 }
@@ -108,10 +109,20 @@ fn publish(s: Session) {
     send_async(Request::Publish { session: s });
 }
 
-/// Called from the heartbeat: keeps hosted sessions alive on the master.
+/// Called from the heartbeat: keeps hosted sessions alive on the master, and follows the bot
+/// count of a joined one.
 pub fn refresh() {
-    let list: Vec<Session> = SESSIONS.lock().unwrap().values().filter(|l| l.published()).map(Local::to_proto).collect();
-    list.into_iter().for_each(publish);
+    let (hosted, joined) = {
+        let sessions = SESSIONS.lock().unwrap();
+        let hosted: Vec<Session> = sessions.values().filter(|l| l.published()).map(Local::to_proto).collect();
+        (hosted, sessions.values().find(|l| l.flags & XSESSION_CREATE_HOST == 0).map(Local::id))
+    };
+    hosted.into_iter().for_each(publish);
+    if let Some(Response::Sessions { sessions }) = joined.and_then(|id| master_request(&Request::Get { id })) {
+        if let Some(s) = sessions.first() {
+            crate::bots::follow(s.bots);
+        }
+    }
 }
 
 /// Applies `f` to a session, then re-publishes it if it is advertised.
@@ -138,6 +149,9 @@ pub fn create(h: usize, flags: u32, max_public: u32, max_private: u32, info: &mu
         *info = XSessionInfo { id, host: NET.xnaddr(), key };
     }
     log!("XSessionCreate flags {flags:#x} slots {max_public}+{max_private} id {:016x}", u64::from_le_bytes(info.id));
+    if let Some(found) = SEEN.lock().unwrap().get(&u64::from_le_bytes(info.id)).filter(|_| flags & XSESSION_CREATE_HOST == 0) {
+        crate::bots::follow(found.bots);
+    }
     let l = Local { flags, info: *info, max_public, max_private, members: vec![] };
     let publish_now = l.published().then(|| l.to_proto());
     SESSIONS.lock().unwrap().insert(h, l);

@@ -51,12 +51,14 @@ still needs confirming in playtests; start from the values in the dump.
 **Solo start (`[startup] solo_start = true`).** The host can start a Player Match alone, and a match
 ends on time or score only, never for lack of players.
 
-**Bots (`[bots] count = 1..11`).** The host's free lobby slots fill with the game's own Training
+**Bots (`[bots] count = 0..11`).** In a Player Match lobby you host, **F7 adds a bot and F8 removes
+one** (the window title shows the count; `count` is where it starts). Free lobby slots fill with the game's own Training
 ("AI Enemy Battle") bots. They need the map's AI navigation, which only maps with a Training
 version have, so bots move on four online maps (Cube and three others); elsewhere they stand
 still. On first start the DLL copies that data into `nativePC\arcXmlTmpPC\aArea_ONLINE_{12,10,01,09}.arc`,
 keeping each original as `.arc.orig` (rename them back to undo). Everyone in the lobby should use
-the same `lp2mods.ini` (joining players see the host's bots only with the same `count`). Up to 11 bots.
+the same `lp2mods.ini` tuning. Joining players pick up the host's bot count automatically (their
+`lp2mods.ini` needs a `[bots]` section). Up to 11 bots.
 
 `[startup] skip_logos` / `skip_title` skip the boot screens.
 

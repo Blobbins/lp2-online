@@ -2,15 +2,17 @@
 //! sNetRuleMediator with bot records (`isBot`, a `botTableNo` naming the bot's look and AI, its name
 //! and custom parts) and the match spawns an AI-driven character for every such slot.
 //!
-//! `[bots] count = N` in lp2mods.ini: in an online lobby, the top N member slots (16-N..16) get
-//! those records (`data/bot_records.bin`, copied from an AI Enemy Battle). Top slots because the
-//! session hands joining players the lowest free member index.
+//! `[bots] count = N` in lp2mods.ini (the section turns bots on; N is the starting count): in an
+//! online lobby, the top N member slots (16-N..16) get those records (`data/bot_records.bin`, copied
+//! from an AI Enemy Battle). Top slots because the session hands joining players the lowest free
+//! member index. In a lobby they host, F7 adds a bot and F8 removes one (shown in the window
+//! title); the count is published with the session and joining players follow it.
 //!
 //! A bot's class comes from its slot (0x7e3320: slot s -> uHm5f+s), and only uHm60..6A have a
 //! network puppet, so `SLOT_CLASSES` makes slots 5..15 uHm60..6A instead: bot k (Training's bot k,
 //! class uHm60+k-1) sits in slot k+4. (Training with 5+ bots then repeats looks; harmless.)
 //!
-//! Every PC in the lobby writes the same records (so everyone needs the same `count`). The host's
+//! Every PC in the lobby writes the same records (the host's count, see `follow`). The host's
 //! game runs the bots' AI and sends their state like a player's; on the other PCs a bot slot gets a
 //! network puppet (`cThinkNetPuppetHM6x`, the think chooser 0x8daef0 picks it for a bot it doesn't
 //! host), and `isBot` keeps the start and "everyone loaded" checks from waiting for it. Puppets
@@ -26,25 +28,27 @@
 
 use crate::mods::{read_mem, write_mem, Exe, EXE, MODS};
 use crate::patch::Patch;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::LazyLock;
 
 const RECORD: usize = 0x7C;
 const RECORDS: usize = 0x148;
 const IS_VALID: usize = 0x64;
 const IS_GAME_MEMBER: usize = 0x65;
-#[cfg(test)]
 const IS_BOT: usize = 0x69;
 /// Bot records 0..16 as AI Enemy Battle sets them up (record 0, the player, is unused).
 static TEMPLATE: &[u8; RECORD * 16] = include_bytes!("../data/bot_records.bin");
 
 struct Globals {
     rule: usize,
+    network: usize,
     game: usize,
 }
 
 fn globals(exe: Exe) -> Globals {
     match exe {
-        Exe::Dx9 => Globals { rule: 0x0184_27B0, game: 0x0184_2020 },
-        Exe::Dx11 => Globals { rule: 0x0185_2850, game: 0x0185_20C0 },
+        Exe::Dx9 => Globals { rule: 0x0184_27B0, network: 0x0184_20A4, game: 0x0184_2020 },
+        Exe::Dx11 => Globals { rule: 0x0185_2850, network: 0x0185_2144, game: 0x0185_20C0 },
     }
 }
 
@@ -59,13 +63,25 @@ fn byte(addr: usize) -> Option<u8> {
     read_mem(addr, &mut b).then_some(b[0])
 }
 
+fn enabled() -> bool {
+    MODS.ini.contains_key("bots")
+}
+
+/// The bot count in play: lp2mods.ini's at start, then the hotkeys' or the joined host's.
+static COUNT: LazyLock<AtomicUsize> = LazyLock::new(|| {
+    let ini = MODS.ini.get("bots").and_then(|s| s.iter().find(|(k, _)| k == "count")).and_then(|(_, v)| v.parse().ok());
+    AtomicUsize::new(ini.unwrap_or(0).min(MAX))
+});
+
 pub fn count() -> usize {
-    MODS.ini
-        .get("bots")
-        .and_then(|s| s.iter().find(|(k, _)| k == "count"))
-        .and_then(|(_, v)| v.parse::<usize>().ok())
-        .unwrap_or(0)
-        .min(MAX)
+    COUNT.load(Ordering::Relaxed)
+}
+
+/// In a joined lobby: use the host's count (from its published session).
+pub fn follow(n: u8) {
+    if enabled() && COUNT.swap((n as usize).min(MAX), Ordering::Relaxed) != n as usize {
+        crate::log!("bots: host has {n}");
+    }
 }
 
 /// Bots with a network puppet class (uHm60..6A), see the module docs.
@@ -120,6 +136,13 @@ fn bot_record(k: usize) -> [u8; RECORD] {
     r
 }
 
+/// An unused member slot.
+const EMPTY: [u8; RECORD] = {
+    let mut r = [0u8; RECORD];
+    r[0] = 0xFF;
+    r
+};
+
 /// The bots in play: the last `count` of 1..=MAX, so they take the top slots.
 fn bots() -> std::ops::RangeInclusive<usize> {
     MAX + 1 - count()..=MAX
@@ -165,7 +188,7 @@ extern "stdcall" fn queue_bot_classes(_addr: u32, r: &mut crate::hook::Regs) -> 
 /// Called once at startup.
 pub fn install() {
     let Some(exe) = *EXE else { return };
-    if count() > 0 {
+    if enabled() {
         SLOT_CLASSES.iter().filter(|p| p.exe == exe).for_each(|p| drop(crate::patch::apply(p)));
         // 5 bytes: mov eax,[esp+4]; push esi. Pops 0x10 bytes of arguments.
         unsafe { crate::hook::install(add_archive(exe), 5, 0x10, queue_bot_classes) };
@@ -173,14 +196,34 @@ pub fn install() {
     }
 }
 
+/// F7/F8 pressed since the last frame, while this game's window has focus.
+fn hotkey() -> Option<bool> {
+    use windows_sys::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, VK_F7, VK_F8};
+    use windows_sys::Win32::UI::WindowsAndMessaging::{GetForegroundWindow, GetWindowThreadProcessId};
+    static HELD: AtomicUsize = AtomicUsize::new(0);
+    let mut pid = 0;
+    unsafe { GetWindowThreadProcessId(GetForegroundWindow(), &mut pid) };
+    let down = |k| pid == std::process::id() && unsafe { GetAsyncKeyState(k as i32) } < 0;
+    let now = down(VK_F7) as usize | (down(VK_F8) as usize) << 1;
+    let pressed = now & !HELD.swap(now, Ordering::Relaxed);
+    (pressed != 0).then_some(pressed & 1 != 0)
+}
+
+/// Shows the count in the window title (the lobby has no place for it).
+fn show_count(n: usize) {
+    use windows_sys::Win32::UI::WindowsAndMessaging::{GetForegroundWindow, SetWindowTextW};
+    let title: Vec<u16> = format!("Lost Planet 2 - bots: {n} (F7 add, F8 remove) ").encode_utf16().collect();
+    unsafe { SetWindowTextW(GetForegroundWindow(), title.as_ptr()) };
+}
+
 /// Main thread, every frame.
 pub fn on_frame() {
     let Some(exe) = *EXE else { return };
-    if count() == 0 {
+    if !enabled() {
         return;
     }
     let g = globals(exe);
-    let (Some(rule), Some(game)) = (ptr(g.rule), ptr(g.game)) else { return };
+    let (Some(rule), Some(net), Some(game)) = (ptr(g.rule), ptr(g.network), ptr(g.game)) else { return };
     // Online (game manager +0x25f is the offline/Training flag).
     if byte(game + 0x25F) != Some(0) {
         return;
@@ -195,16 +238,32 @@ pub fn on_frame() {
     if !(0..16).any(|i| rec(i)[IS_VALID] == 1) || (0..16).any(|i| rec(i)[IS_VALID] == 1 && rec(i)[IS_GAME_MEMBER] == 1) {
         return;
     }
-    let mut placed = vec![];
-    // shortcut: players + bots > 16 collide on a slot, cap bots by joiners if that matters.
-    for k in bots() {
-        let (i, want) = (k + 4, bot_record(k));
-        if rec(i)[IS_VALID] == 0 && rec(i) != want && write_mem(rule + RECORDS + i * RECORD, &want) {
-            placed.push(i);
+    // Hosting (sGameNetwork.mIsHost): the hotkeys change the count, sessions publish it.
+    if byte(net + 0x28) == Some(1) {
+        if let Some(add) = hotkey() {
+            let n = if add { (count() + 1).min(MAX) } else { count().saturating_sub(1) };
+            COUNT.store(n, Ordering::Relaxed);
+            show_count(n);
+            crate::session::refresh();
         }
     }
-    if !placed.is_empty() {
-        crate::log!("bots: placed in slots {placed:?}");
+    let mut changed = vec![];
+    // shortcut: players + bots > 16 collide on a slot, cap bots by joiners if that matters.
+    for k in 1..=MAX {
+        let i = k + 4;
+        let want = if bots().contains(&k) {
+            bot_record(k)
+        } else if rec(i)[IS_BOT] == 1 {
+            EMPTY
+        } else {
+            continue;
+        };
+        if rec(i)[IS_VALID] == 0 && rec(i) != want && write_mem(rule + RECORDS + i * RECORD, &want) {
+            changed.push(i);
+        }
+    }
+    if !changed.is_empty() {
+        crate::log!("bots: {} in play, slots {changed:?} changed", count());
     }
 }
 

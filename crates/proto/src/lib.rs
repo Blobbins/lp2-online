@@ -51,6 +51,9 @@ pub struct Session {
     /// Hash of the host's lp2mods.ini overrides (0 = unmodded). Only equal sets can play together.
     #[serde(default)]
     pub mods: u64,
+    /// AI bots the host has in the lobby; joining players add the same ones.
+    #[serde(default)]
+    pub bots: u8,
 }
 
 impl Session {

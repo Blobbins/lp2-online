@@ -25,7 +25,8 @@ weapons = true
 abilities = true
 
 [bots]
-# Fill free slots of a lobby with this many AI bots (0-11; everyone in the lobby needs the same number). Bots can move only on
+# AI bots in Player Match lobbies (0-11). In a lobby you host, F7 adds one and F8 removes one;
+# players who join use your count. Keep this section to see bots in others' lobbies. Bots move only on
 # Cube and the 3 other maps that have Training versions (the DLL adds their AI data once,
 # keeping the originals in nativePC/arcXmlTmpPC as aArea_ONLINE_*.arc.orig).
 count = 3
