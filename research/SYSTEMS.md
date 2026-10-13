@@ -152,7 +152,7 @@ Training -> AI Enemy Battle is offline versus with bots; online needed five thin
 3. **Navigation.** Online maps ship no AI navigation; Training stages `aArea_TUTOREAL_NN` are online
    maps plus `tool\AI\NaviMesh\..\List_..` (rAINavigationMeshList), `Way_..` (rAIWayPoint) and
    `tool\AI\AreaAI\..`, bound through their script list (Tool\ScrList, XFS: entries mType 0x1d/0x1e/0x1f).
-   Without them the AI runs but never moves or finds targets. Pairs: ONLINE_12 (Cube) <- 26,
+   Without them the AI runs but never moves or finds targets. File layouts: NAVMESH.md. Pairs: ONLINE_12 (Cube) <- 26,
    ONLINE_10 <- 31, ONLINE_01 <- 41, ONLINE_09 <- 46 (36 is Cube's second layout).
 
 4. **Other players.** The host never sends bot records, but it does send each bot's state like a
