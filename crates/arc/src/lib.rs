@@ -11,6 +11,7 @@ use std::io::{Read, Write};
 
 pub mod sbc;
 pub mod navi;
+pub mod navgen;
 
 pub const VERSION: u16 = 8;
 const ENTRY: usize = 80;
