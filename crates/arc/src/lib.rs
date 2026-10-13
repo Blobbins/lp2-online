@@ -10,6 +10,7 @@ use flate2::Compression;
 use std::io::{Read, Write};
 
 pub mod sbc;
+pub mod navi;
 
 pub const VERSION: u16 = 8;
 const ENTRY: usize = 80;
