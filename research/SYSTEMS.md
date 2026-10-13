@@ -176,6 +176,7 @@ Training -> AI Enemy Battle is offline versus with bots; online needed five thin
    -1 none), +0x6c isTeamDecide. The host's balancer (0xffa040, end of the lobby countdown) teams bots
    too and sends the result to every PC; our lobby rewrites must keep those bytes or every bot ends up
    on its own team (free-for-all). Details: research/TEAMS.md.
+
 What the bots' AI reads (plan graph, position scoring, personality presets, fire rhythm) and which
 settings would make them smarter: `BOT_AI.md`.
 
