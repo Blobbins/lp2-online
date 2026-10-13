@@ -137,6 +137,17 @@ fn bot_record(k: usize) -> [u8; RECORD] {
     r
 }
 
+/// +0x00 is the member's team (s32: the slot in free-for-all, 0/1 in team rules), +0x6c
+/// isTeamDecide. The host's balancer at the end of the lobby countdown sets both for bots too and
+/// sends them to every PC; once a slot holds a bot, they are the game's, not the template's.
+fn keep_team(mut want: [u8; RECORD], live: &[u8]) -> [u8; RECORD] {
+    if live[IS_BOT] == 1 {
+        want[..8].copy_from_slice(&live[..8]);
+        want[0x6C] = live[0x6C];
+    }
+    want
+}
+
 /// An unused member slot.
 const EMPTY: [u8; RECORD] = {
     let mut r = [0u8; RECORD];
@@ -290,7 +301,7 @@ pub fn on_frame() {
     for k in 1..=MAX {
         let i = k + 4;
         let want = if bots().contains(&k) {
-            bot_record(k)
+            keep_team(bot_record(k), rec(i))
         } else if rec(i)[IS_BOT] == 1 {
             EMPTY
         } else {
@@ -318,6 +329,15 @@ mod tests {
             assert_eq!(t[IS_VALID], 0, "bots are never valid players");
             assert!(t[0x2c] != 0, "has a name");
         }
+    }
+
+    #[test]
+    fn rewrites_keep_the_games_team() {
+        let mut live = bot_record(9);
+        (live[..4].copy_from_slice(&1i32.to_le_bytes()), live[0x6C] = 1);
+        let w = keep_team(bot_record(9), &live);
+        assert_eq!((i32::from_le_bytes(w[..4].try_into().unwrap()), w[0x6C]), (1, 1));
+        assert_eq!(keep_team(bot_record(9), &EMPTY)[0], 13, "first write: the template's free-for-all team");
     }
 
     #[test]

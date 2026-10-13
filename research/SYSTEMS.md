@@ -172,6 +172,11 @@ Training -> AI Enemy Battle is offline versus with bots; online needed five thin
    players to join..." line is a `message\msgPC\MsgOnline` entry (MES table in `ID_FCORE_*_PC.arc`:
    u32 length, UTF-8 text, NUL) and gets the F7/F8 hint.
 
+6. **Teams.** Record +0x00 is the member's team (s32: the slot in free-for-all, 0/1 in team rules,
+   -1 none), +0x6c isTeamDecide. The host's balancer (0xffa040, end of the lobby countdown) teams bots
+   too and sends the result to every PC; our lobby rewrites must keep those bytes or every bot ends up
+   on its own team (free-for-all). Details: research/TEAMS.md.
+
 Archive type hashes are `~crc32(class name) & 0x7fffffff`. Found with `[trace]` hooks and `[watch]`
 hardware watchpoints (`crates/xlive/src/watch.rs`; an empty `[watch]` only installs the handler, for
 debug registers set by an outside script).
