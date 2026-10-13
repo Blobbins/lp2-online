@@ -1,0 +1,350 @@
+[0] Fight #2 attr=0x200 root=0x1 tired=0.1 frustration=0.1 recover=50 next=[1, 3, 6, 7, 8, 10, 12, 23, 26, 28, 29, 24, 36, 48, 49, 51, 16, 67, 75, 78] pre=[]
+    Filt   FilterTargetExist#26(IsOnlyEnemyExistCheck=False, Inverse=False, AndCheck=True)
+    Eval   EvaluateDefault#28(Weight=20.0)
+    Move   MoveShot#30(NoShotAttr=0)
+[1] RunToDataPost #31 attr=0x0 root=0xb tired=0.1 frustration=0.1 recover=50 next=[2] pre=[0, 13, 33]
+    Move   MoveTrace#41(TgtType=16, Radius=100.0, ArriveRadius=100.0, CountTimer=120.0, IsPadWalk=False, IsActSelect=False, ActionSet=MoveAction#42(CharaNo=0, ActNo=0, ActParam=0, IsLoop=False, IsOw=True), IsEndTime=True, MoveTimeObj=MoveTime#43(Return=1, Time=300, IsParamCheck=False))
+    Move   MoveShot#44(NoShotAttr=0)
+    Move   MoveDamage#45(DamageLimit=50.0)
+    Move   MoveDistance#46(TgtType=0, Radius=600.0, IsOut=False, Return=2)
+[2] ExecDataPost #47 attr=0x1 root=0xb tired=90 frustration=10 recover=40 next=[] pre=[1]
+    Filt   FilterDistans#52(TgtType=16, Radius=1500.0, IsInner=True, Inverse=False, AndCheck=True)
+    Filt   FilterDistans#53(TgtType=0, Radius=500.0, IsInner=False, Inverse=False, AndCheck=True)
+    Eval   EvaluateDefault#55(Weight=300.0)
+    Eval   EvaluateDamageRemain#56(IsMinusRemainCheck=False, Weight=-40.0)
+    Eval   EvaluateDataPostOn#57(Weight=1000.0)
+    Move   MoveHmAction#59(PadAction=11)
+    Move   MoveTime#60(Return=1, Time=300, IsParamCheck=False)
+    Move   MoveDamage#61(DamageLimit=10.0)
+    Move   MoveDistance#62(TgtType=0, Radius=400.0, IsOut=False, Return=2)
+[3] RunToTarget #63 attr=0x0 root=0x1 tired=0.1 frustration=0.1 recover=50 next=[11] pre=[0]
+    Move   MoveTrace#71(TgtType=0, Radius=100.0, ArriveRadius=200.0, CountTimer=120.0, IsPadWalk=False, IsActSelect=False, ActionSet=MoveAction#72(CharaNo=0, ActNo=0, ActParam=2, IsLoop=True, IsOw=True), IsEndTime=True, MoveTimeObj=MoveTime#73(Return=1, Time=300, IsParamCheck=False))
+    Move   MoveShot#74(NoShotAttr=0)
+[4] Strike #75 attr=0x1 root=0x1 tired=100 frustration=0 recover=30 next=[] pre=[11]
+    Filt   FilterDistans#80(TgtType=0, Radius=600.0, IsInner=True, Inverse=False, AndCheck=True)
+    Filt   FilterCharIsXXX#81(CheckMode=1, CheckChar=1, Inverse=True, AndCheck=True)
+    Eval   EvaluateDistans#83(TgtType=0, Radius=700.0, IsInner=True, IsOnlyHeightCheck=False, Weight=700.0)
+    Eval   EvaluateMessagePickUp#84(MessageType=12, Weight=1000.0)
+    Eval   EvaluateAIParam#85(CheckParamMode=3, Weight=1000.0)
+    Move   MoveHmAction#87(PadAction=1)
+    Move   MoveTime#88(Return=1, Time=30, IsParamCheck=False)
+[5] WaitAI-P #89 attr=0x1 root=0x1 tired=100 frustration=10 recover=30 next=[] pre=[6]
+    Filt   FilterTracePos#94(TgtType=21, Inverse=False, AndCheck=True)
+    Eval   EvaluateDamageRemain#96(IsMinusRemainCheck=True, Weight=800.0)
+    Eval   EvaluateDangerArea#97(Weight=1000.0)
+    Eval   EvaluateDistans#98(TgtType=0, Radius=700.0, IsInner=True, IsOnlyHeightCheck=False, Weight=-600.0)
+    Eval   EvaluateDefault#99(Weight=300.0)
+    Eval   EvaluateDistans#100(TgtType=1, Radius=1000.0, IsInner=True, IsOnlyHeightCheck=False, Weight=500.0)
+    Eval   EvaluateAIParam#101(CheckParamMode=4, Weight=100.0)
+    Move   MoveTime#103(Return=1, Time=150, IsParamCheck=False)
+    Move   MoveHmAction#104(PadAction=3)
+    Move   MoveHarmoControl#105()
+[6] RunToWallP #106 attr=0x0 root=0x1 tired=0.1 frustration=0.1 recover=50 next=[5] pre=[0]
+    Move   MoveTrace#114(TgtType=21, Radius=100.0, ArriveRadius=100.0, CountTimer=120.0, IsPadWalk=False, IsActSelect=False, ActionSet=MoveAction#115(CharaNo=0, ActNo=0, ActParam=2, IsLoop=True, IsOw=True), IsEndTime=True, MoveTimeObj=MoveTime#116(Return=1, Time=300, IsParamCheck=False))
+    Move   MoveShot#117(NoShotAttr=0)
+    Move   MoveHmAction#118(PadAction=3)
+    Move   MoveHarmoControl#119()
+[7] Wait #120 attr=0x1 root=0x1 tired=100 frustration=10 recover=30 next=[] pre=[0]
+    Eval   EvaluateDefault#126(Weight=500.0)
+    Eval   EvaluateAIParam#127(CheckParamMode=2, Weight=200.0)
+    Move   MoveTime#129(Return=1, Time=90, IsParamCheck=False)
+    Move   MoveShot#130(NoShotAttr=0)
+    Move   MovePickMessage#131(MessageType=6, Return=0)
+    Move   MoveDamage#132(DamageLimit=30.0)
+[8] RunToShotP #133 attr=0x0 root=0x1 tired=0.1 frustration=0.1 recover=50 next=[9] pre=[0]
+    Move   MoveTrace#141(TgtType=11, Radius=100.0, ArriveRadius=100.0, CountTimer=120.0, IsPadWalk=False, IsActSelect=False, ActionSet=MoveAction#142(CharaNo=0, ActNo=0, ActParam=2, IsLoop=True, IsOw=True), IsEndTime=True, MoveTimeObj=MoveTime#143(Return=1, Time=300, IsParamCheck=False))
+    Move   MoveShot#144(NoShotAttr=0)
+[9] WaitShotP #145 attr=0x1 root=0x1 tired=100 frustration=10 recover=40 next=[] pre=[8]
+    Eval   EvaluateDamageRemain#151(IsMinusRemainCheck=False, Weight=-300.0)
+    Eval   EvaluateDefault#152(Weight=800.0)
+    Eval   EvaluateMessagePickUp#153(MessageType=12, Weight=300.0)
+    Eval   EvaluateAIParam#154(CheckParamMode=3, Weight=100.0)
+    Move   MoveShot#156(NoShotAttr=0)
+    Move   MoveTime#157(Return=1, Time=40, IsParamCheck=False)
+[10] Avoid-G #158 attr=0x1 root=0x1 tired=100 frustration=10 recover=50 next=[] pre=[0]
+    Filt   FilterMessagePickUp#163(MessageType=6, Inverse=False, AndCheck=True)
+    Eval   EvaluateDefault#165(Weight=1000.0)
+    Eval   EvaluateAIParam#166(CheckParamMode=1, Weight=100.0)
+    Move   MoveHmAction#168(PadAction=4)
+    Move   MoveTime#169(Return=1, Time=20, IsParamCheck=True)
+[11] WaitNear #170 attr=0x0 root=0x1 tired=100 frustration=10 recover=50 next=[4] pre=[3]
+    Move   MoveDistance#178(TgtType=0, Radius=200.0, IsOut=True, Return=2)
+    Move   MoveTime#179(Return=1, Time=20, IsParamCheck=False)
+    Move   MoveShot#180(NoShotAttr=0)
+[12] RunToCoverP #181 attr=0x0 root=0x1 tired=100 frustration=10 recover=50 next=[17] pre=[0]
+    Move   MoveTrace#189(TgtType=10, Radius=100.0, ArriveRadius=100.0, CountTimer=120.0, IsPadWalk=False, IsActSelect=False, ActionSet=MoveAction#190(CharaNo=0, ActNo=0, ActParam=0, IsLoop=False, IsOw=True), IsEndTime=True, MoveTimeObj=MoveTime#191(Return=1, Time=300, IsParamCheck=False))
+    Move   MoveHmAction#192(PadAction=3)
+    Move   MoveShot#193(NoShotAttr=0)
+    Move   MoveHarmoControl#194()
+[13] NoTarget #195 attr=0x200 root=0x2 tired=100 frustration=10 recover=50 next=[14, 21, 1, 30, 31, 40, 48, 24, 67, 75, 78] pre=[]
+    Filt   FilterTargetExist#210(IsOnlyEnemyExistCheck=False, Inverse=True, AndCheck=True)
+    Eval   EvaluateDefault#212(Weight=10.0)
+    Move   MoveHarmoControl#214()
+[14] RunToPatrol #215 attr=0x0 root=0xa tired=100 frustration=10 recover=50 next=[15] pre=[13, 33]
+    Move   MoveTrace#224(TgtType=11, Radius=100.0, ArriveRadius=100.0, CountTimer=120.0, IsPadWalk=False, IsActSelect=False, ActionSet=MoveAction#225(CharaNo=0, ActNo=0, ActParam=0, IsLoop=False, IsOw=True), IsEndTime=True, MoveTimeObj=MoveTime#226(Return=1, Time=300, IsParamCheck=False))
+    Move   MoveShot#227(NoShotAttr=0)
+[15] CheckWayPoint #228 attr=0x1 root=0xa tired=100 frustration=10 recover=40 next=[] pre=[14]
+    Eval   EvaluateDangerArea#234(Weight=1000.0)
+    Eval   EvaluateDefault#235(Weight=10.0)
+    Move   MoveTime#237(Return=1, Time=30, IsParamCheck=False)
+[16] Ft-RunToGoal #238 attr=0x1 root=0x1 tired=80 frustration=15 recover=50 next=[] pre=[0]
+    Filt   FilterDistans#243(TgtType=0, Radius=1000.0, IsInner=False, Inverse=False, AndCheck=True)
+    Eval   EvaluateDefault#245(Weight=560.0)
+    Eval   EvaluateDistans#246(TgtType=0, Radius=800.0, IsInner=False, IsOnlyHeightCheck=False, Weight=200.0)
+    Eval   EvaluateDistans#247(TgtType=1, Radius=1500.0, IsInner=False, IsOnlyHeightCheck=False, Weight=1000.0)
+    Eval   EvaluateAIParam#248(CheckParamMode=7, Weight=400.0)
+    Move   MoveTrace#250(TgtType=5, Radius=100.0, ArriveRadius=100.0, CountTimer=120.0, IsPadWalk=False, IsActSelect=False, ActionSet=MoveAction#251(CharaNo=0, ActNo=0, ActParam=0, IsLoop=False, IsOw=True), IsEndTime=True, MoveTimeObj=MoveTime#252(Return=1, Time=300, IsParamCheck=False))
+    Move   MoveShot#253(NoShotAttr=0)
+    Move   MoveTime#254(Return=1, Time=150, IsParamCheck=False)
+    Move   MoveDistance#255(TgtType=0, Radius=1000.0, IsOut=False, Return=2)
+[17] WaitCoverP #256 attr=0x1 root=0x1 tired=100 frustration=10 recover=30 next=[] pre=[12]
+    Eval   EvaluateDamageRemain#262(IsMinusRemainCheck=False, Weight=800.0)
+    Eval   EvaluateDefault#263(Weight=300.0)
+    Eval   EvaluateDangerArea#264(Weight=1000.0)
+    Eval   EvaluateDistans#265(TgtType=0, Radius=700.0, IsInner=True, IsOnlyHeightCheck=False, Weight=400.0)
+    Eval   EvaluateDistans#266(TgtType=1, Radius=1000.0, IsInner=True, IsOnlyHeightCheck=False, Weight=600.0)
+    Eval   EvaluateAIParam#267(CheckParamMode=4, Weight=100.0)
+    Move   MoveTime#269(Return=1, Time=30, IsParamCheck=False)
+    Move   MoveHmAction#270(PadAction=3)
+    Move   MoveHarmoControl#271()
+[18] FSM #272 attr=0x200 root=0x4 tired=100 frustration=10 recover=50 next=[19, 20] pre=[]
+    Filt   FilterFSM#278(IsOnlyFsmCheck=False, FSMCommand=1, FSMAttr=0, IsFSMGoPosNeedTurn=False, Inverse=False, AndCheck=True)
+    Eval   EvaluateDefault#280(Weight=50.0)
+    Move   ReturnX#282(Return=1)
+[19] RunToFSM-Pos #283 attr=0x1 root=0x4 tired=0 frustration=0 recover=0 next=[] pre=[18]
+    Filt   FilterFSM#288(IsOnlyFsmCheck=False, FSMCommand=1, FSMAttr=0, IsFSMGoPosNeedTurn=False, Inverse=False, AndCheck=True)
+    Eval   EvaluateDefault#290(Weight=1000.0)
+    Move   MoveTrace#292(TgtType=8, Radius=100.0, ArriveRadius=100.0, CountTimer=120.0, IsPadWalk=False, IsActSelect=False, ActionSet=MoveAction#293(CharaNo=0, ActNo=0, ActParam=0, IsLoop=False, IsOw=True), IsEndTime=False, MoveTimeObj=MoveTime#294(Return=1, Time=300, IsParamCheck=False))
+[20] Wait #295 attr=0x1 root=0x4 tired=0 frustration=0 recover=0 next=[] pre=[18]
+    Filt   FilterFSM#300(IsOnlyFsmCheck=False, FSMCommand=0, FSMAttr=0, IsFSMGoPosNeedTurn=False, Inverse=False, AndCheck=True)
+    Move   MoveTime#303(Return=1, Time=30, IsParamCheck=False)
+[21] RunToGoal #304 attr=0x0 root=0xa tired=100 frustration=10 recover=40 next=[22] pre=[13, 33]
+    Move   MoveTrace#313(TgtType=5, Radius=100.0, ArriveRadius=100.0, CountTimer=120.0, IsPadWalk=False, IsActSelect=False, ActionSet=MoveAction#314(CharaNo=0, ActNo=0, ActParam=0, IsLoop=False, IsOw=True), IsEndTime=True, MoveTimeObj=MoveTime#315(Return=1, Time=300, IsParamCheck=False))
+    Move   MoveShot#316(NoShotAttr=0)
+[22] WaitGoal #317 attr=0x1 root=0xa tired=40 frustration=23 recover=55 next=[] pre=[21]
+    Eval   EvaluateDefault#323(Weight=200.0)
+    Eval   EvaluateAIParam#324(CheckParamMode=7, Weight=500.0)
+    Move   MoveTime#326(Return=1, Time=30, IsParamCheck=False)
+    Move   MoveShot#327(NoShotAttr=0)
+[23] Avoid #328 attr=0x1 root=0x1 tired=200 frustration=5 recover=50 next=[] pre=[0]
+    Eval   EvaluateDamageRemain#334(IsMinusRemainCheck=False, Weight=1000.0)
+    Eval   EvaluateDefault#335(Weight=500.0)
+    Eval   EvaluateAIParam#336(CheckParamMode=1, Weight=1000.0)
+    Move   MoveHmAction#338(PadAction=4)
+    Move   MoveTime#339(Return=1, Time=20, IsParamCheck=False)
+[24] RunToWp #340 attr=0x0 root=0x3 tired=100 frustration=10 recover=50 next=[25] pre=[0, 13]
+    Move   MoveTrace#349(TgtType=17, Radius=100.0, ArriveRadius=100.0, CountTimer=120.0, IsPadWalk=False, IsActSelect=False, ActionSet=MoveAction#350(CharaNo=0, ActNo=0, ActParam=0, IsLoop=False, IsOw=True), IsEndTime=True, MoveTimeObj=MoveTime#351(Return=1, Time=300, IsParamCheck=False))
+    Move   MoveShot#352(NoShotAttr=0)
+[25] GetWp #353 attr=0x1 root=0x3 tired=100 frustration=10 recover=30 next=[] pre=[24]
+    Filt   FilterDistans#358(TgtType=17, Radius=1400.0, IsInner=True, Inverse=False, AndCheck=True)
+    Eval   EvaluateDefault#360(Weight=500.0)
+    Eval   EvaluateDamageRemain#361(IsMinusRemainCheck=False, Weight=-30.0)
+    Eval   EvaluateGetWp#362(Weight=1000.0)
+    Move   MoveHmAction#364(PadAction=12)
+[26] WpChange #365 attr=0x1 root=0x1 tired=100 frustration=5 recover=5 next=[] pre=[0]
+    Eval   EvaluateDefault#371(Weight=30.0)
+    Eval   EvaluateDamageRemain#372(IsMinusRemainCheck=False, Weight=-200.0)
+    Move   MoveHmAction#374(PadAction=14)
+[27] ShotTaregt #375 attr=0x1 root=0x1 tired=30 frustration=32 recover=30 next=[] pre=[28]
+    Filt   FilterDistans#380(TgtType=0, Radius=3000.0, IsInner=True, Inverse=False, AndCheck=True)
+    Filt   FilterDistans#381(TgtType=0, Radius=850.0, IsInner=False, Inverse=False, AndCheck=True)
+    Filt   FilterCharStatus#382(CheckChar=1, CheckStatus=268435456, Inverse=True, AndCheck=True)
+    Filt   FilterCharIsXXX#383(CheckMode=1, CheckChar=1, Inverse=True, AndCheck=True)
+    Eval   EvaluateDefault#385(Weight=700.0)
+    Eval   EvaluateDamageRemain#386(IsMinusRemainCheck=False, Weight=-40.0)
+    Eval   EvaluateDistans#387(TgtType=0, Radius=1000.0, IsInner=True, IsOnlyHeightCheck=False, Weight=-400.0)
+    Eval   EvaluateDistans#388(TgtType=0, Radius=1500.0, IsInner=False, IsOnlyHeightCheck=False, Weight=300.0)
+    Eval   EvaluateAIParam#389(CheckParamMode=3, Weight=100.0)
+    Move   MoveDistance#391(TgtType=0, Radius=500.0, IsOut=False, Return=1)
+    Move   MoveShot#392(NoShotAttr=0)
+    Move   MoveTime#393(Return=1, Time=90, IsParamCheck=False)
+[28] RunToTarget #394 attr=0x0 root=0x1 tired=100 frustration=10 recover=50 next=[27] pre=[0]
+    Move   MoveTrace#402(TgtType=0, Radius=100.0, ArriveRadius=800.0, CountTimer=120.0, IsPadWalk=False, IsActSelect=False, ActionSet=MoveAction#403(CharaNo=0, ActNo=0, ActParam=0, IsLoop=False, IsOw=True), IsEndTime=False, MoveTimeObj=MoveTime#404(Return=1, Time=300, IsParamCheck=False))
+    Move   MoveShot#405(NoShotAttr=0)
+[29] ThrowG #406 attr=0x1 root=0x1 tired=100 frustration=14 recover=10 next=[] pre=[0]
+    Filt   FilterDistans#411(TgtType=0, Radius=3000.0, IsInner=True, Inverse=False, AndCheck=True)
+    Filt   FilterDistans#412(TgtType=0, Radius=500.0, IsInner=False, Inverse=False, AndCheck=True)
+    Eval   EvaluateDistans#414(TgtType=0, Radius=600.0, IsInner=False, IsOnlyHeightCheck=True, Weight=1300.0)
+    Eval   EvaluateAIParam#415(CheckParamMode=10, Weight=1000.0)
+    Move   MoveShotGranade#417()
+    Move   MoveTime#418(Return=1, Time=40, IsParamCheck=False)
+[30] RUN #419 attr=0x1 root=0x2 tired=100 frustration=10 recover=50 next=[] pre=[13]
+    Eval   EvaluateDefault#425(Weight=300.0)
+    Move   MoveTrace#427(TgtType=11, Radius=100.0, ArriveRadius=100.0, CountTimer=120.0, IsPadWalk=False, IsActSelect=False, ActionSet=MoveAction#428(CharaNo=0, ActNo=0, ActParam=0, IsLoop=False, IsOw=True), IsEndTime=True, MoveTimeObj=MoveTime#429(Return=1, Time=300, IsParamCheck=False))
+[31] RunToWp-NT #430 attr=0x0 root=0xa tired=100 frustration=10 recover=50 next=[32] pre=[13, 33]
+    Move   MoveTrace#439(TgtType=17, Radius=100.0, ArriveRadius=100.0, CountTimer=120.0, IsPadWalk=False, IsActSelect=False, ActionSet=MoveAction#440(CharaNo=0, ActNo=0, ActParam=0, IsLoop=False, IsOw=True), IsEndTime=True, MoveTimeObj=MoveTime#441(Return=1, Time=300, IsParamCheck=False))
+[32] GetWp-NT #442 attr=0x1 root=0xa tired=100 frustration=10 recover=40 next=[] pre=[31]
+    Filt   FilterDistans#447(TgtType=17, Radius=30000.0, IsInner=True, Inverse=False, AndCheck=True)
+    Eval   EvaluateDefault#449(Weight=80.0)
+    Eval   EvaluateGetWp#450(Weight=200.0)
+    Move   MoveHmAction#452(PadAction=12)
+[33] TargetDie #453 attr=0x200 root=0x8 tired=100 frustration=10 recover=50 next=[34, 35, 31, 14, 21, 1] pre=[]
+    Filt   FilterCharStatus#463(CheckChar=1, CheckStatus=127, Inverse=False, AndCheck=True)
+    Eval   EvaluateDefault#465(Weight=30.0)
+[34] Appeal1 #467 attr=0x1 root=0x8 tired=500 frustration=10 recover=20 next=[] pre=[33]
+    Eval   EvaluateDefault#473(Weight=20.0)
+    Eval   EvaluateAIParam#474(CheckParamMode=11, Weight=500.0)
+    Move   MoveHmAction#476(PadAction=26)
+[35] Wait #477 attr=0x1 root=0x8 tired=100 frustration=10 recover=50 next=[] pre=[33]
+    Move   MoveTime#484(Return=1, Time=30, IsParamCheck=False)
+[36] RunToReload #485 attr=0x0 root=0x1 tired=100 frustration=10 recover=50 next=[37] pre=[0]
+    Move   MoveTrace#493(TgtType=10, Radius=100.0, ArriveRadius=100.0, CountTimer=120.0, IsPadWalk=False, IsActSelect=False, ActionSet=MoveAction#494(CharaNo=0, ActNo=0, ActParam=0, IsLoop=False, IsOw=True), IsEndTime=True, MoveTimeObj=MoveTime#495(Return=1, Time=150, IsParamCheck=False))
+    Move   MoveHmAction#496(PadAction=3)
+[37] Reload #497 attr=0x1 root=0x1 tired=0 frustration=0 recover=0 next=[] pre=[36]
+    Filt   FilterReload#502(Inverse=False, AndCheck=True)
+    Eval   EvaluateAIParam#504(CheckParamMode=3, Weight=100.0)
+    Eval   EvaluateReload#505(Weight=500.0)
+    Move   MoveHmAction#507(PadAction=2)
+    Move   MoveHmAction#508(PadAction=3)
+[38] AutoRappel #509 attr=0x200 root=0x10 tired=100 frustration=10 recover=50 next=[72] pre=[]
+    Filt   FilterIsAction#514(CheckMode=1, Inverse=False, AndCheck=True)
+    Eval   EvaluateDefault#516(Weight=70.0)
+[39] AnchorCancel #518 attr=0x1 root=0x10 tired=50 frustration=10 recover=10 next=[] pre=[72]
+    Eval   EvaluateDefault#524(Weight=60.0)
+    Move   MoveHmAction#526(PadAction=24)
+[40] Reload #527 attr=0x1 root=0x2 tired=0 frustration=10 recover=10 next=[] pre=[13]
+    Filt   FilterReload#532(Inverse=False, AndCheck=True)
+    Eval   EvaluateDefault#534(Weight=800.0)
+    Move   MoveHmAction#536(PadAction=2)
+[41] TEST #537 attr=0x1 root=0x20 tired=100 frustration=10 recover=50 next=[] pre=[42]
+    Filt   FilterTrue#542(Inverse=False, AndCheck=True)
+    Eval   EvaluateDefault#544(Weight=10000.0)
+    Move   MoveTrace#546(TgtType=1, Radius=100.0, ArriveRadius=100.0, CountTimer=120.0, IsPadWalk=False, IsActSelect=False, ActionSet=MoveAction#547(CharaNo=0, ActNo=0, ActParam=0, IsLoop=False, IsOw=True), IsEndTime=False, MoveTimeObj=MoveTime#548(Return=1, Time=300, IsParamCheck=False))
+[42] TEST #549 attr=0x200 root=0x20 tired=100 frustration=10 recover=50 next=[41] pre=[]
+    Filt   FilterTrue#554(Inverse=True, AndCheck=True)
+    Eval   EvaluateDefault#556(Weight=10000.0)
+[43] YATTA #558 attr=0x200 root=0x40 tired=0 frustration=0 recover=0 next=[44, 45, 46] pre=[]
+    Filt   FilterCharStatus#565(CheckChar=0, CheckStatus=4294967296, Inverse=False, AndCheck=True)
+    Eval   EvaluateDefault#567(Weight=100.0)
+    Move   MoveShot#569(NoShotAttr=0)
+[44] Yt-Shot #570 attr=0x1 root=0x40 tired=0 frustration=0 recover=0 next=[] pre=[43]
+    Eval   EvaluateDefault#576(Weight=100.0)
+    Move   MoveShot#578(NoShotAttr=0)
+    Move   MoveTime#579(Return=1, Time=60, IsParamCheck=False)
+[45] Yt-Wait #580 attr=0x1 root=0x40 tired=100 frustration=10 recover=10 next=[] pre=[43]
+    Eval   EvaluateDefault#586(Weight=80.0)
+    Move   MoveTime#588(Return=1, Time=150, IsParamCheck=False)
+[46] Yt-RideOff #589 attr=0x1 root=0x40 tired=0 frustration=0 recover=0 next=[] pre=[43]
+    Filt   FilterDistans#594(TgtType=0, Radius=1000.0, IsInner=False, Inverse=False, AndCheck=True)
+    Eval   EvaluateDistans#596(TgtType=16, Radius=1500.0, IsInner=True, IsOnlyHeightCheck=False, Weight=500.0)
+    Move   MoveHmAction#598(PadAction=1)
+    Move   MoveTime#599(Return=1, Time=30, IsParamCheck=False)
+[47] YattaRideOn #600 attr=0x1 root=0x3 tired=20 frustration=10 recover=40 next=[] pre=[48]
+    Filt   FilterTracePos#605(TgtType=22, Inverse=False, AndCheck=True)
+    Eval   EvaluateDefault#607(Weight=1500.0)
+    Move   MoveHmAction#609(PadAction=1)
+    Move   MoveTime#610(Return=1, Time=30, IsParamCheck=False)
+[48] RunToYatta #611 attr=0x0 root=0x3 tired=100 frustration=10 recover=50 next=[47] pre=[0, 13]
+    Move   MoveTrace#620(TgtType=22, Radius=100.0, ArriveRadius=100.0, CountTimer=120.0, IsPadWalk=False, IsActSelect=False, ActionSet=MoveAction#621(CharaNo=0, ActNo=0, ActParam=0, IsLoop=False, IsOw=True), IsEndTime=True, MoveTimeObj=MoveTime#622(Return=1, Time=300, IsParamCheck=False))
+[49] RunToApproach #623 attr=0x0 root=0x1 tired=100 frustration=10 recover=50 next=[50] pre=[0]
+    Move   MoveTrace#631(TgtType=13, Radius=100.0, ArriveRadius=100.0, CountTimer=120.0, IsPadWalk=False, IsActSelect=False, ActionSet=MoveAction#632(CharaNo=0, ActNo=0, ActParam=0, IsLoop=False, IsOw=True), IsEndTime=False, MoveTimeObj=MoveTime#633(Return=1, Time=300, IsParamCheck=False))
+    Move   MoveShot#634(NoShotAttr=0)
+[50] WaitAppPoint #635 attr=0x1 root=0x1 tired=100 frustration=10 recover=45 next=[] pre=[49]
+    Eval   EvaluateDefault#641(Weight=500.0)
+    Eval   EvaluateDistans#642(TgtType=0, Radius=1000.0, IsInner=False, IsOnlyHeightCheck=False, Weight=500.0)
+    Move   MoveShot#644(NoShotAttr=0)
+    Move   MoveTime#645(Return=1, Time=15, IsParamCheck=False)
+[51] Ft-RunToReader #646 attr=0x0 root=0x1 tired=100 frustration=10 recover=50 next=[52] pre=[0]
+    Move   MoveTrace#654(TgtType=1, Radius=100.0, ArriveRadius=1000.0, CountTimer=120.0, IsPadWalk=False, IsActSelect=False, ActionSet=MoveAction#655(CharaNo=0, ActNo=0, ActParam=0, IsLoop=False, IsOw=True), IsEndTime=False, MoveTimeObj=MoveTime#656(Return=1, Time=300, IsParamCheck=False))
+    Move   MoveShot#657(NoShotAttr=0)
+[52] Ft-WaitReader #658 attr=0x1 root=0x1 tired=100 frustration=10 recover=40 next=[] pre=[51]
+    Filt   FilterDistans#663(TgtType=1, Radius=2000.0, IsInner=False, Inverse=False, AndCheck=True)
+    Filt   FilterDistans#664(TgtType=1, Radius=5000.0, IsInner=True, Inverse=False, AndCheck=True)
+    Eval   EvaluateDefault#666(Weight=850.0)
+    Move   MoveShot#668(NoShotAttr=0)
+    Move   MoveTime#669(Return=1, Time=15, IsParamCheck=False)
+[53] FightShield #670 attr=0x200 root=0x80 tired=100 frustration=10 recover=50 next=[54, 55, 56] pre=[]
+    Filt   FilterTargetExist#677(IsOnlyEnemyExistCheck=False, Inverse=False, AndCheck=True)
+    Filt   FilterWeapon#678(WpMode=0, WpAttr=18443296005244846079, WpAttr2=18446744073709551615, Inverse=True, AndCheck=True)
+    Filt   FilterDistans#679(TgtType=0, Radius=2500.0, IsInner=True, Inverse=False, AndCheck=True)
+    Filt   FilterCharStatus#680(CheckChar=0, CheckStatus=127, Inverse=False, AndCheck=True)
+    Eval   EvaluateDefault#682(Weight=25.0)
+    Move   MoveShot#684(NoShotAttr=3)
+[54] ShieldWait #685 attr=0x1 root=0x80 tired=100 frustration=10 recover=50 next=[] pre=[53]
+    Eval   EvaluateDefault#691(Weight=700.0)
+    Move   MoveShot#693(NoShotAttr=3)
+    Move   MoveDistance#694(TgtType=0, Radius=300.0, IsOut=False, Return=2)
+[55] ShieldAttack #695 attr=0x1 root=0x80 tired=100 frustration=10 recover=50 next=[] pre=[53]
+    Filt   FilterDistans#700(TgtType=0, Radius=350.0, IsInner=True, Inverse=False, AndCheck=True)
+    Eval   EvaluateDistans#702(TgtType=0, Radius=400.0, IsInner=True, IsOnlyHeightCheck=False, Weight=1000.0)
+    Move   MoveShot#704(NoShotAttr=0)
+    Move   MoveHmAction#705(PadAction=1)
+    Move   MoveTime#706(Return=1, Time=30, IsParamCheck=False)
+[56] MoveTargetShield #707 attr=0x0 root=0x80 tired=100 frustration=10 recover=50 next=[57] pre=[53]
+    Move   MoveTrace#715(TgtType=0, Radius=100.0, ArriveRadius=100.0, CountTimer=120.0, IsPadWalk=False, IsActSelect=False, ActionSet=MoveAction#716(CharaNo=0, ActNo=0, ActParam=0, IsLoop=False, IsOw=True), IsEndTime=False, MoveTimeObj=MoveTime#717(Return=1, Time=300, IsParamCheck=False))
+[57] ShieldWaitTg #718 attr=0x1 root=0x80 tired=100 frustration=10 recover=50 next=[] pre=[56]
+    Filt   FilterDistans#723(TgtType=0, Radius=1000.0, IsInner=True, Inverse=False, AndCheck=True)
+    Eval   EvaluateDefault#725(Weight=800.0)
+    Move   MoveShot#727(NoShotAttr=0)
+    Move   MoveTime#728(Return=1, Time=60, IsParamCheck=False)
+[58] WAIT_AREA #729 attr=0x200 root=0x100 tired=0 frustration=0 recover=0 next=[59, 60, 61] pre=[]
+    Filt   FilterArea#736(CheckArea=4, Inverse=False, AndCheck=True)
+    Eval   EvaluateDefault#738(Weight=45.0)
+[59] GoWPos #740 attr=0x1 root=0x100 tired=10 frustration=5 recover=5 next=[] pre=[58]
+    Filt   FilterTracePos#745(TgtType=23, Inverse=False, AndCheck=True)
+    Eval   EvaluateDefault#747(Weight=1000.0)
+    Move   MoveTrace#749(TgtType=23, Radius=100.0, ArriveRadius=100.0, CountTimer=120.0, IsPadWalk=False, IsActSelect=False, ActionSet=MoveAction#750(CharaNo=0, ActNo=0, ActParam=0, IsLoop=False, IsOw=True), IsEndTime=False, MoveTimeObj=MoveTime#751(Return=1, Time=300, IsParamCheck=False))
+[60] Wait #752 attr=0x1 root=0x100 tired=10 frustration=0 recover=5 next=[] pre=[58]
+    Eval   EvaluateDefault#758(Weight=30.0)
+    Move   MoveTime#760(Return=1, Time=30, IsParamCheck=True)
+[61] Appeal #761 attr=0x1 root=0x100 tired=10 frustration=5 recover=5 next=[] pre=[58]
+    Move   MoveHmAction#768(PadAction=9)
+    Move   MoveTime#769(Return=1, Time=90, IsParamCheck=False)
+[62] SeeOrSpaceJump #770 attr=0x200 root=0x200 tired=100 frustration=10 recover=50 next=[63] pre=[]
+    Filt   FilterArea#775(CheckArea=2, Inverse=False, AndCheck=True)
+    Filt   FilterCharIsXXX#776(CheckMode=0, CheckChar=0, Inverse=True, AndCheck=True)
+    Eval   EvaluateDefault#778(Weight=72.0)
+[63] JumpControl #780 attr=0x1 root=0x200 tired=0 frustration=0 recover=0 next=[] pre=[62]
+    Eval   EvaluateDefault#786(Weight=1000.0)
+    Move   MoveJumpControl#788()
+[64] AVOID_AREA #789 attr=0x200 root=0x400 tired=100 frustration=10 recover=50 next=[65, 66] pre=[]
+    Filt   FilterArea#795(CheckArea=5, Inverse=False, AndCheck=True)
+    Eval   EvaluateDefault#797(Weight=46.0)
+[65] GoAvoidPos #799 attr=0x1 root=0x400 tired=0 frustration=0 recover=0 next=[] pre=[64]
+    Eval   EvaluateDefault#805(Weight=50.0)
+    Move   MoveTrace#807(TgtType=24, Radius=100.0, ArriveRadius=100.0, CountTimer=120.0, IsPadWalk=False, IsActSelect=False, ActionSet=MoveAction#808(CharaNo=0, ActNo=0, ActParam=0, IsLoop=False, IsOw=True), IsEndTime=False, MoveTimeObj=MoveTime#809(Return=1, Time=300, IsParamCheck=False))
+[66] Avoid #810 attr=0x1 root=0x400 tired=0 frustration=0 recover=0 next=[] pre=[64]
+    Filt   FilterTrue#815(Inverse=True, AndCheck=True)
+    Eval   EvaluateDefault#817(Weight=0.0)
+    Move   MoveHmAction#819(PadAction=4)
+[67] RunEgg #820 attr=0x0 root=0x3 tired=100 frustration=10 recover=50 next=[68] pre=[0, 13]
+    Move   MoveTrace#829(TgtType=26, Radius=100.0, ArriveRadius=100.0, CountTimer=120.0, IsPadWalk=False, IsActSelect=False, ActionSet=MoveAction#830(CharaNo=0, ActNo=0, ActParam=0, IsLoop=False, IsOw=True), IsEndTime=False, MoveTimeObj=MoveTime#831(Return=1, Time=300, IsParamCheck=False))
+    Move   MoveShot#832(NoShotAttr=0)
+[68] GetEgg #833 attr=0x1 root=0x3 tired=40 frustration=32 recover=10 next=[] pre=[67]
+    Filt   FilterGetAkEgg#838(Inverse=False, AndCheck=True)
+    Eval   EvaluateDefault#840(Weight=1500.0)
+    Move   MoveHmAction#842(PadAction=12)
+[69] EggToGoal #843 attr=0x200 root=0x800 tired=100 frustration=10 recover=50 next=[70, 71, 73] pre=[]
+    Filt   FilterWeapon#850(WpMode=0, WpAttr=18446744073709551615, WpAttr2=18446744073436921855, Inverse=True, AndCheck=True)
+    Eval   EvaluateDefault#852(Weight=23.0)
+[70] RunEggGoal #854 attr=0x1 root=0x800 tired=10 frustration=10 recover=2 next=[] pre=[69]
+    Filt   FilterDistans#859(TgtType=27, Radius=4000.0, IsInner=True, Inverse=False, AndCheck=True)
+    Eval   EvaluateDefault#861(Weight=100.0)
+    Move   MoveTrace#863(TgtType=27, Radius=100.0, ArriveRadius=100.0, CountTimer=120.0, IsPadWalk=False, IsActSelect=False, ActionSet=MoveAction#864(CharaNo=0, ActNo=0, ActParam=0, IsLoop=False, IsOw=True), IsEndTime=False, MoveTimeObj=MoveTime#865(Return=1, Time=300, IsParamCheck=False))
+[71] RunToGoal_Egg #866 attr=0x1 root=0x800 tired=13 frustration=2 recover=1 next=[] pre=[69]
+    Move   MoveTrace#873(TgtType=5, Radius=100.0, ArriveRadius=100.0, CountTimer=120.0, IsPadWalk=False, IsActSelect=False, ActionSet=MoveAction#874(CharaNo=0, ActNo=0, ActParam=0, IsLoop=False, IsOw=True), IsEndTime=False, MoveTimeObj=MoveTime#875(Return=1, Time=300, IsParamCheck=False))
+[72] RPWait #876 attr=0x0 root=0x10 tired=100 frustration=10 recover=50 next=[39, 74] pre=[38]
+    Move   MoveTime#885(Return=1, Time=90, IsParamCheck=False)
+    Move   MoveShot#886(NoShotAttr=0)
+[73] RunPlyer_Egg #887 attr=0x1 root=0x800 tired=13 frustration=2 recover=1 next=[] pre=[69]
+    Filt   FilterTrue#892(Inverse=True, AndCheck=True)
+    Move   MoveTrace#895(TgtType=1, Radius=100.0, ArriveRadius=100.0, CountTimer=120.0, IsPadWalk=False, IsActSelect=False, ActionSet=MoveAction#896(CharaNo=0, ActNo=0, ActParam=0, IsLoop=False, IsOw=True), IsEndTime=False, MoveTimeObj=MoveTime#897(Return=1, Time=300, IsParamCheck=False))
+[74] AnchorJump #898 attr=0x1 root=0x10 tired=20 frustration=10 recover=8 next=[] pre=[72]
+    Move   MoveHmAction#905(PadAction=23)
+[75] RunToFriend #906 attr=0x0 root=0x3 tired=50 frustration=10 recover=50 next=[76] pre=[0, 13]
+    Move   MoveTrace#915(TgtType=1, Radius=100.0, ArriveRadius=100.0, CountTimer=120.0, IsPadWalk=False, IsActSelect=False, ActionSet=MoveAction#916(CharaNo=0, ActNo=0, ActParam=0, IsLoop=False, IsOw=True), IsEndTime=False, MoveTimeObj=MoveTime#917(Return=1, Time=300, IsParamCheck=False))
+    Move   MoveShot#918(NoShotAttr=0)
+[76] FriendFollow #919 attr=0x1 root=0x3 tired=50 frustration=20 recover=15 next=[] pre=[75]
+    Filt   FilterDistans#924(TgtType=1, Radius=5000.0, IsInner=True, Inverse=False, AndCheck=True)
+    Eval   EvaluateAIParam#926(CheckParamMode=9, Weight=1000.0)
+    Eval   EvaluateDefault#927(Weight=500.0)
+    Move   MoveShot#929(NoShotAttr=0)
+    Move   MoveTime#930(Return=1, Time=90, IsParamCheck=False)
+[77] DeffAkEgg #931 attr=0x1 root=0x3 tired=100 frustration=10 recover=10 next=[] pre=[78]
+    Filt   FilterDefenceAkEgg#936(Inverse=False, AndCheck=True)
+    Eval   EvaluateDefault#938(Weight=1500.0)
+    Move   MoveShot#940(NoShotAttr=0)
+    Move   MoveHmAction#941(PadAction=3)
+    Move   MoveTime#942(Return=1, Time=150, IsParamCheck=False)
+[78] RunEggArround #943 attr=0x0 root=0x3 tired=100 frustration=10 recover=50 next=[77] pre=[13, 0]
+    Move   MoveTrace#952(TgtType=26, Radius=100.0, ArriveRadius=400.0, CountTimer=120.0, IsPadWalk=False, IsActSelect=False, ActionSet=MoveAction#953(CharaNo=0, ActNo=0, ActParam=0, IsLoop=False, IsOw=True), IsEndTime=False, MoveTimeObj=MoveTime#954(Return=1, Time=300, IsParamCheck=False))

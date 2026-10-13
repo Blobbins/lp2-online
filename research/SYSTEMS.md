@@ -176,6 +176,8 @@ Training -> AI Enemy Battle is offline versus with bots; online needed five thin
    -1 none), +0x6c isTeamDecide. The host's balancer (0xffa040, end of the lobby countdown) teams bots
    too and sends the result to every PC; our lobby rewrites must keep those bytes or every bot ends up
    on its own team (free-for-all). Details: research/TEAMS.md.
+What the bots' AI reads (plan graph, position scoring, personality presets, fire rhythm) and which
+settings would make them smarter: `BOT_AI.md`.
 
 Archive type hashes are `~crc32(class name) & 0x7fffffff`. Found with `[trace]` hooks and `[watch]`
 hardware watchpoints (`crates/xlive/src/watch.rs`; an empty `[watch]` only installs the handler, for
@@ -198,6 +200,7 @@ debug registers set by an outside script).
 - `xref.py EXE name...`: code that references a string.
 - `dti.py EXE CTOR OUT`: class table.
 - `tuning.py EXE REGISTER OUT` and `tuning_defaults.py EXE OUT`: tuning names, addresses and the defaults recoverable statically.
+- `xfs.py dump|pack|plans|test`: XFS resources (e.g. the bots' `rThinkPlanAI`) to JSON and back; `test` round-trips every bot AI file.
 
 `lp2-arc` (Rust, `crates/arc`) reads, writes, extracts, repacks and greps the game's `.arc` archives
 (all 2,951 shipped archives read and round-trip unchanged).
