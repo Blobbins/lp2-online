@@ -109,6 +109,15 @@ heads 0x50710, bodies 0x50730, legs 0x50750, backpacks 0x50770 (32 bytes each), 
 Part table id 0xAABBCCDD maps to `nativePC\arcXmlTmpPC\CustomParts\<hd|bd|bk|lg><set><item>[<variant>].arc`
 with set = 0x20 + DD (0x0f stays 0f), item = BB, variant = CC.
 
+## Career level and how weapons/abilities are earned
+
+- Career points: u32 at game manager +0x509fc (in the save too). A second counter at +0x509f8 uses
+  the same table (likely ranked). Level = 1 + the per-level costs the points cover, max 99; costs at
+  DX11 0x170b0e0 / DX9 0x16fb0e0 (1000, 1100, ... 33299; 999,999 points for level 99). Read at 0xf03075.
+- New profiles get a starter set (DX11 0x7fb86d..). The only other source of weapons and abilities
+  is the random roll on the campaign chapter results (`uIdChapterResult` 0xec4f90 -> 0x7fd2a0, which
+  also hands out parts and titles). `unlocks.rs` adds a level-based schedule on top.
+
 ## Match flow (versus, DX11 addresses)
 
 Host presses Start in the player-match lobby (uIdBattlePlayerLobby, vtable 0x162bcb0, update

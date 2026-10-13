@@ -19,10 +19,10 @@ solo_start = true
 parts = true
 # Own every Nom de Guerre (title).
 titles = true
-# Own every weapon and grenade (120, incl. the 17 special weapons).
-weapons = true
-# Own every ability (42).
-abilities = true
+# Weapons and abilities unlock as your online career level rises (career points from matches):
+# part of them each level, all of them by these levels. (weapons = true / abilities = true: all now.)
+weapons_by_level = 20
+abilities_by_level = 20
 
 [bots]
 # AI bots in Player Match lobbies (up to 11). A lobby you host starts with none: F7 adds one,

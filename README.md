@@ -48,7 +48,10 @@ InfoGame.mNetWork.gameTimerMax = 600.0
 finished) and the game's own debug messages (`[game] ...`). What each field does in a real match
 still needs confirming in playtests; start from the values in the dump.
 
-**Unlocks (`[unlocks]`).** `parts`, `titles`, `weapons`, `abilities` = true unlocks them all.
+**Unlocks (`[unlocks]`).** `parts` and `titles` = true unlock every cosmetic. Weapons and abilities
+unlock as your online career level rises: with `weapons_by_level = 20`, a share of them each level and
+all by level 20 (the original game only gave them out at random after campaign chapters).
+`weapons` / `abilities` = true unlock them all at once instead. Unlocks are kept in each player's save.
 
 **Solo start (`[startup] solo_start = true`).** The host can start a Player Match alone, and a match
 ends on time or score only, never for lack of players.

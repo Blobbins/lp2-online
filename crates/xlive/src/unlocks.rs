@@ -12,6 +12,12 @@
 //!
 //! `[unlocks] parts / titles / weapons / abilities = true` mark every real item owned and clear bits
 //! that do not name a real item (selecting such a phantom entry crashes the game).
+//!
+//! `weapons_by_level = N` / `abilities_by_level = N` instead unlock them with the online career level:
+//! at level L, (L-1)/(N-1) of them (everything at level N). The original game only hands these out
+//! at random on the campaign's chapter results (0x7fd2a0); this only adds to what a profile owns.
+//! Career level: points at game manager +0x509fc, level = 1 + the per-level costs (table DX11
+//! 0x170b0e0) the points cover, at most 99 (as the game's own 0xf03075).
 
 use crate::mods::{read_mem, write_mem, Exe, EXE, MODS};
 
@@ -31,6 +37,7 @@ const WEAPONS: (usize, u32) = (0x509C8, 120);
 /// A slot only opens when it owns a variant besides the default.
 const WEAPON_VARIANTS: usize = 0x5088C;
 const ABILITIES: (usize, u32) = (0x501FC, 42);
+const CAREER_POINTS: usize = 0x509FC;
 /// Title ids 0x30..=0x20b (contiguous, from the game's title table at DX11 0x1744b90).
 const TITLES: u32 = 476;
 
@@ -46,6 +53,56 @@ fn game_manager(exe: Exe) -> Option<usize> {
 
 fn enabled(key: &str) -> bool {
     MODS.ini.get("unlocks").is_some_and(|s| s.iter().any(|(k, v)| k == key && (v == "true" || v == "1")))
+}
+
+/// `[unlocks] key = N` (a career level, 2..=99).
+fn by_level(key: &str) -> Option<u32> {
+    let v = MODS.ini.get("unlocks")?.iter().find(|(k, _)| k == key)?.1.parse::<u32>().ok()?;
+    Some(v.clamp(2, 99))
+}
+
+fn level_costs(exe: Exe) -> Option<[u32; 100]> {
+    let addr = match exe {
+        Exe::Dx9 => 0x016F_B0E0,
+        Exe::Dx11 => 0x0170_B0E0,
+    };
+    let mut raw = [0u8; 400];
+    read_mem(addr, &mut raw).then(|| std::array::from_fn(|i| u32::from_le_bytes(raw[i * 4..i * 4 + 4].try_into().unwrap())))
+}
+
+/// The game's career level for `points` (cost of level n+1 at `costs[n]`).
+pub fn career_level(points: u32, costs: &[u32; 100]) -> u32 {
+    let (mut level, mut need) = (1usize, costs[1]);
+    while need <= points && level < 99 {
+        level += 1;
+        need = need.saturating_add(costs[level]);
+    }
+    level as u32
+}
+
+/// Share of the items unlocked at `level` when all are unlocked at `by`.
+pub fn share(level: u32, by: u32) -> f32 {
+    ((level.saturating_sub(1)) as f32 / (by - 1) as f32).min(1.0)
+}
+
+/// Sets the first `k` bits (MSB-first), leaving the rest as they are.
+pub fn grant_bits(words: &mut [u32], k: u32) {
+    for i in 0..k.min(words.len() as u32 * 32) {
+        words[(i >> 5) as usize] |= 0x8000_0000u32 >> (i & 31);
+    }
+}
+
+/// Weapon slot variants for `share`: each slot gets that share of its non-default variants.
+pub fn grant_variants(words: &mut [u32; 3], share: f32) {
+    let mut b: Vec<u8> = words.iter().flat_map(|w| w.to_le_bytes()).collect();
+    for (i, x) in b[..10].iter_mut().enumerate() {
+        let extra = if i < 5 { 6 } else { 4 }; // 7 gun / 5 grenade variants, bit 0 the default
+        let n = (share * extra as f32).round() as u32;
+        *x |= ((1u16 << (n + 1)) - 1) as u8;
+    }
+    for (w, c) in words.iter_mut().zip(b.chunks(4)) {
+        *w = u32::from_le_bytes(c.try_into().unwrap());
+    }
 }
 
 /// MSB-first bitfield: bits below `count` set, other bits cleared unless in `keep`.
@@ -134,6 +191,29 @@ pub fn on_frame(_frame: u32) {
     if enabled("abilities") && modify::<2>(gm + ABILITIES.0, |w| unlock_bits(w, ABILITIES.1, 0..0)) {
         changed.push("abilities");
     }
+    let (wl, al) = (by_level("weapons_by_level").filter(|_| !enabled("weapons")), by_level("abilities_by_level").filter(|_| !enabled("abilities")));
+    if wl.is_some() || al.is_some() {
+        let mut points = [0u8; 4];
+        let Some(costs) = EXE.and_then(level_costs).filter(|_| read_mem(gm + CAREER_POINTS, &mut points)) else { return };
+        let level = career_level(u32::from_le_bytes(points), &costs);
+        static SHOWN: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+        if SHOWN.swap(level, std::sync::atomic::Ordering::Relaxed) != level {
+            crate::log!("unlocks: career level {level}");
+        }
+        if let Some(by) = wl {
+            let sh = share(level, by);
+            if modify::<4>(gm + WEAPONS.0, |w| grant_bits(w, (sh * WEAPONS.1 as f32).round() as u32))
+                | modify::<3>(gm + WEAPON_VARIANTS, |w| grant_variants(w, sh))
+            {
+                changed.push("weapons for the level");
+            }
+        }
+        if let Some(by) = al {
+            if modify::<2>(gm + ABILITIES.0, |w| grant_bits(w, (share(level, by) * ABILITIES.1 as f32).round() as u32)) {
+                changed.push("abilities for the level");
+            }
+        }
+    }
     if !changed.is_empty() {
         // Rate-limited: a field the game resets every frame would otherwise flood the log.
         static LOGGED: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
@@ -146,6 +226,31 @@ pub fn on_frame(_frame: u32) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn career_levels_follow_the_cost_table() {
+        let mut costs = [0u32; 100];
+        (1..100).for_each(|i| costs[i] = 900 + 100 * i as u32); // 1000, 1100, 1200, ...
+        assert_eq!(career_level(200, &costs), 1, "200 pts is Lv.1, next at 1000");
+        assert_eq!(career_level(1000, &costs), 2);
+        assert_eq!(career_level(2099, &costs), 2);
+        assert_eq!(career_level(2100, &costs), 3);
+        assert_eq!(career_level(u32::MAX, &costs), 99);
+    }
+
+    #[test]
+    fn level_grants_add_only() {
+        assert_eq!((share(1, 20), share(20, 20), share(50, 20)), (0.0, 1.0, 1.0));
+        let mut w = [0x0000_0001u32, 0];
+        grant_bits(&mut w, 3);
+        assert_eq!(w, [0xE000_0001, 0], "first 3 set, others kept");
+        let mut v = [0u32; 3];
+        grant_variants(&mut v, 0.0);
+        assert_eq!(v[0].to_le_bytes(), [1, 1, 1, 1], "level 1: defaults only");
+        grant_variants(&mut v, 1.0);
+        let b: Vec<u8> = v.iter().flat_map(|w| w.to_le_bytes()).collect();
+        assert_eq!(&b[..10], &[0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F]);
+    }
 
     #[test]
     fn parts_set_real_and_clear_phantoms() {
