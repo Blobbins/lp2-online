@@ -222,3 +222,58 @@ Build the structs in `lp2_arc::navi` and call `to_bytes()`; the totals are compu
 
 Open questions: the meaning of the polygon and way point attribute masks, the WAY `mType`
 geometries, IBL shape 0x08/0x80, and whether the game needs the area tiles (one root area may do).
+
+## Generator
+
+`lp2_arc::navgen` builds all three files for any stage from its walking collision
+(`scr\..\atari<stage>` in `variable\<stage>_v.arc`, COLLISION.md) with Recast
+(recastnavigation 9f4ce64, `crates/arc/recast/`, compiled by `cc` with a small C++ wrapper;
+Detour is not used). The DLL runs it once per online map without a Training version
+(`crates/xlive/src/botmaps.rs`), so nothing generated ships with the repo.
+
+```bash
+cargo run -p lp2-arc --release --bin lp2-navi -- gen "G:\Lost Planet 2\nativePC\arcXmlTmpPC\variable\aArea_ONLINE_05_v.arc" out05
+```
+
+writes `tool/AI/NaviMesh/Online_05/List_Online_05`, `Way_Online_05`, `tool/AI/AreaAI/aArea_ONLINE_05`
+(named like `lp2-arc extract`) and `navmesh.obj`.
+
+**Input.** All ordinary solid triangles; special ones (mask bit 30: invisible walls, kill volumes)
+block but are never walkable. Floor triangles over 25e6 units² (x/z) are not walkable either: maps
+00, 01, 06, 11 have giant catch planes/boxes of a few triangles around the level (map 01's at
+y = -3000 spans 30000 × 20000 and doubled the walkable area). The grid spans the remaining floors.
+
+**Parameters** (`navgen::PARAMS`), picked by comparing with the 4 Training meshes:
+cell 20, cell height 10, slope 60°, agent height 180, climb 50, radius 20, max edge 600,
+simplification error 20, min region 8² cells, merge 20² cells, detail sample 120 / error 10.
+Radius 40 and slope 45 left visibly more real mesh uncovered along walls and on slopes; climb 100
+covers slightly more of map 31 but adds unreachable ledges elsewhere. The detail mesh is needed:
+the plain polygon mesh is up to a few hundred units off the ground on hilly maps.
+
+**Output.** Recast's detail triangles with vertices welded by position (neighbouring polygons
+compute their shared edge identically), links for every shared edge (symmetric, centroid
+distance), polygons sorted into a 4×4 grid of `area_aabb` tiles under `root`, quadtrees as in
+"What a generator has to write". Polygon attribute 0. Way points: a grid at floor height (one per
+floor level 100+ apart), 300 apart, widened in steps of 100 until there are at most 1500, attribute
+0xFFFFFFFF, no links. AreaAI: **no boxes**; grid corners = the mesh bounds, every cell -1.
+
+**Results** (`cargo test -p lp2-arc --release navgen -- --nocapture`; coverage = share of one
+mesh's floor, sampled every 50 units, that the other also has within 100 units of height):
+
+| Online / Training | generated tris / links | real tris / links | real covered | generated on real | ms (i686) |
+|---|---|---|---|---|---|
+| 12 / 26 (Cube) | 153 / 304 | 3182 / 8612 | 0.63 | 0.71 | 49 |
+| 10 / 31 | 7543 / 19732 | 10377 / 28648 | 0.82 | 0.83 | 232 |
+| 01 / 41 | 12227 / 31076 | 7902 / 21212 | 0.89 | 0.90 | 306 |
+| 09 / 46 | 2216 / 4492 | 4976 / 12996 | 0.93 | 0.74 | 115 |
+
+Cube's real mesh also covers the tops of its blocks (y 250/500/1000) and leaves out their
+footprints; the blocks are placed objects, not in the stage collision, so the generated Cube mesh
+is its bare floor (in x/z the two agree to 97 %). The rest of the difference is the real mesh
+reaching closer to walls and up steeper slopes, and on map 46 some side rooms the real mesh leaves
+out. Every online map generates, 49 ms (Cube) to 1.5 s (map 15) in the 32-bit build, at most
+39590 triangles (map 11; the area ranges allow 65535).
+
+**Not generated:** AI zones (IBL boxes: hand-made routes and behaviour), placed objects
+(ObjSet not decoded, so crates/blocks are not obstacles), jump links, play-area limits beyond
+the catch-plane rule (floors behind invisible walls stay in the mesh), the attribute masks.

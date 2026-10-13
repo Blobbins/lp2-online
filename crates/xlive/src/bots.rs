@@ -23,8 +23,8 @@
 //! +0x69 isBot.
 //!
 //! Online also lacks what Training loads for them: the bot classes (queued below with the stage)
-//! and the maps' AI navigation data (`botmaps`), so bots work on the 4 maps that have Training
-//! versions (`botmaps::PAIRS`; Cube is one).
+//! and the maps' AI navigation data (`botmaps`: copied from the Training versions of the 4 maps
+//! that have one, generated from the collision for the others).
 
 use crate::mods::{read_mem, write_mem, Exe, EXE, MODS};
 use crate::patch::Patch;
