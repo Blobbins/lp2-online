@@ -233,6 +233,37 @@ unsafe fn or_bot(addr: usize, cmp: [u8; 8]) {
     write_mem(addr, &jmp);
 }
 
+/// Smarter bots (research/BOT_AI.md). Fire rhythm rows 2-3 (f32 frames, alternating fire/pause):
+/// the game's make a bot wait 1.7-2.7 s into every plan before its first shot, and most plans end
+/// sooner. Campaign AI shares the table, so the bot rows are only in place while online.
+const RHYTHM: [(Exe, usize); 2] = [(Exe::Dx9, 0x017A_4F40), (Exe::Dx11, 0x017B_4FA0)];
+const RHYTHM_GAME: [f32; 18] = [0., 50., 15., 40., 30., 30., 20., 40., 15., 0., 80., 15., 60., 30., 100., 20., 80., 15.];
+const RHYTHM_BOTS: [f32; 18] = [0., 8., 30., 20., 30., 20., 30., 20., 9999., 0., 8., 45., 20., 45., 20., 45., 20., 9999.];
+/// The 8 versus personality presets (24 bytes each; campaign uses other tables): byte 0 aim
+/// tracking, 3 attack, 16 fire hesitation. Row 0 as shipped identifies the table.
+const PRESETS: [(Exe, usize); 2] = [(Exe::Dx9, 0x014C_7728), (Exe::Dx11, 0x014D_7880)];
+const PRESET_ROW0: [u8; 20] = [50, 100, 50, 50, 50, 50, 50, 100, 90, 50, 50, 90, 50, 50, 100, 50, 50, 50, 50, 50];
+
+/// Every preset: aim 90, attack 100, no fire hesitation.
+pub fn sharpen(presets: &mut [u8; 192]) {
+    for row in presets.chunks_mut(24) {
+        (row[0], row[3], row[16]) = (90, 100, 0);
+    }
+}
+
+fn floats(v: &[f32; 18]) -> Vec<u8> {
+    v.iter().flat_map(|f| f.to_le_bytes()).collect()
+}
+
+/// Puts `want` at `addr` if it holds either form now (never writes over an unknown build).
+fn swap_rhythm(addr: usize, want: &[f32; 18]) {
+    let mut now = [0u8; 72];
+    let (game, bots) = (floats(&RHYTHM_GAME), floats(&RHYTHM_BOTS));
+    if read_mem(addr, &mut now) && (now[..] == game[..] || now[..] == bots[..]) && now[..] != floats(want)[..] {
+        write_mem(addr, &floats(want));
+    }
+}
+
 /// Called once at startup.
 pub fn install() {
     let Some(exe) = *EXE else { return };
@@ -242,6 +273,15 @@ pub fn install() {
         // 5 bytes: mov eax,[esp+4]; push esi. Pops 0x10 bytes of arguments.
         unsafe { crate::hook::install(add_archive(exe), 5, 0x10, queue_bot_classes) };
         crate::botmaps::prepare();
+        if let Some(&(_, addr)) = PRESETS.iter().find(|p| p.0 == exe) {
+            let mut t = [0u8; 192];
+            if read_mem(addr, &mut t) && t[..20] == PRESET_ROW0 {
+                let original: &'static [u8] = Box::leak(Box::new(t));
+                sharpen(&mut t);
+                let patched: &'static [u8] = Box::leak(Box::new(t));
+                crate::patch::apply(&Patch { name: "bot presets", exe, addr, original, patched }); // .rdata: needs the protection change
+            }
+        }
     }
 }
 
@@ -274,7 +314,11 @@ pub fn on_frame() {
     let g = globals(exe);
     let (Some(rule), Some(net), Some(game)) = (ptr(g.rule), ptr(g.network), ptr(g.game)) else { return };
     // Online (game manager +0x25f is the offline/Training flag).
-    if byte(game + 0x25F) != Some(0) {
+    let online = byte(game + 0x25F) == Some(0);
+    if let Some(&(_, addr)) = RHYTHM.iter().find(|r| r.0 == exe) {
+        swap_rhythm(addr, if online { &RHYTHM_BOTS } else { &RHYTHM_GAME });
+    }
+    if !online {
         return;
     }
     let mut records = vec![0u8; RECORD * 16];
@@ -329,6 +373,14 @@ mod tests {
             assert_eq!(t[IS_VALID], 0, "bots are never valid players");
             assert!(t[0x2c] != 0, "has a name");
         }
+    }
+
+    #[test]
+    fn sharpen_sets_aim_attack_hesitation_only() {
+        let mut t = [50u8; 192];
+        sharpen(&mut t);
+        assert!(t.chunks(24).all(|r| (r[0], r[3], r[16], r[1], r[23]) == (90, 100, 0, 50, 50)));
+        assert_eq!(floats(&RHYTHM_GAME).len(), 72);
     }
 
     #[test]
