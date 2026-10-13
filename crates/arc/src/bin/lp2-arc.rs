@@ -2,6 +2,7 @@
 //! lp2-arc extract <file.arc> <out dir>     files become `<name>.<type hash>`
 //! lp2-arc pack    <dir> <file.arc>         reverse of extract
 //! lp2-arc grep    <dir> <text>             which archive files contain `text`
+//! lp2-arc obj     <file.arc> <name> <out.obj>  collision mesh (rCollision) as Wavefront OBJ
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -66,7 +67,13 @@ fn run(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
         }
-        _ => return Err("usage: lp2-arc list <arc> | extract <arc> <dir> | pack <dir> <arc> | grep <dir> <text>".into()),
+        [cmd, arc, name, out] if cmd == "obj" => {
+            let entries = lp2_arc::read(&std::fs::read(arc)?)?;
+            let e = entries.iter().find(|e| e.type_hash == lp2_arc::sbc::TYPE && e.name.eq_ignore_ascii_case(name));
+            let e = e.ok_or_else(|| format!("no rCollision named {name}"))?;
+            std::fs::write(out, lp2_arc::sbc::parse(&e.data)?.to_obj())?;
+        }
+        _ => return Err("usage: lp2-arc list <arc> | extract <arc> <dir> | pack <dir> <arc> | grep <dir> <text> | obj <arc> <name> <out.obj>".into()),
     }
     Ok(())
 }

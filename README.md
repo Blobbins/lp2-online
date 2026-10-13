@@ -12,7 +12,7 @@ anyone can run.
 | `crates/proto` | Wire format both of them share. |
 | `directory` | The server directory: a Cloudflare Worker where servers list themselves and games find them. |
 | `dist` | Installer, uninstaller, `host-server.bat` and the release packaging script. |
-| `crates/arc` | `lp2-arc`: read, write, extract, repack and search the game's `.arc` archives. |
+| `crates/arc` | `lp2-arc`: read, write, extract, repack and search the game's `.arc` archives; export map collision as OBJ (`research/COLLISION.md`). |
 | `research/` | Reverse-engineering tools and tables: classes, tuning globals, and the multiplayer systems map (`research/SYSTEMS.md`). |
 
 ## Changing the game (hybrid rewrite)

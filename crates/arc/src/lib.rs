@@ -9,6 +9,8 @@ use flate2::write::ZlibEncoder;
 use flate2::Compression;
 use std::io::{Read, Write};
 
+pub mod sbc;
+
 pub const VERSION: u16 = 8;
 const ENTRY: usize = 80;
 const NAME: usize = 64;
