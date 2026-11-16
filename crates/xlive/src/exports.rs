@@ -408,7 +408,12 @@ pub unsafe extern "system" fn XNetQosServiceLookup(_flags: u32, event: HANDLE, o
     if out.is_null() {
         return net::WSAEINVAL;
     }
-    *out = session::qos_lookup(&[]);
+    // A service lookup probes the connection to the LIVE service itself, and real GFWL always
+    // answers it with exactly one XNQOSINFO (cxnqos = 1). The online campaign start waits on that
+    // entry: with an empty result (cxnqos = 0) the client never gets past the campaign screen and
+    // the log ends at this call. One completed entry, with the same nominal figures the lobby QoS
+    // reports, lets it continue.
+    *out = session::qos_lookup(&[None]);
     if !event.is_null() {
         SetEvent(event);
     }
